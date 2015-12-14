@@ -15,13 +15,7 @@ int main (int argc, char **argv) {
     print_help_text();
   } else {
     if (!args.quiet_flag) {
-      cout << "Modo de busca: ";
-
-      if (args.allowed_edit_distance > 0) {
-        cout << "aproximada (distancia máxima = " << args.allowed_edit_distance << ")" << endl;
-      } else {
-        cout << "exata" << endl;
-      }
+      cout << "Modo: " << (args.mode_flag ? "index" : "search") << endl;
 
       if (args.pattern_file) {
         cout << "Arquivo de padrões: " << args.pattern_file << endl;
@@ -44,9 +38,9 @@ int main (int argc, char **argv) {
       read_pattern_file(args);
     }
     
-    if (args.source_text_files) {
+    if (args.index_file) {
       if (!args.quiet_flag) cout << "Arquivos de texto a serem buscados:" << endl;
-      search_files(args);
+      search_index_file(args);
     }
 
     exit (0);
