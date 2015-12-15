@@ -31,12 +31,12 @@ program_args get_program_parameters(int argc, char** argv) {
   int option_index;
   int current_parameter;
   program_args args;
-
+	
   struct option long_options[] =
   {
     /* These options set a flag */
-    {"index",   no_argument,       &args.mode_flag, 0},
-    {"search",  no_argument,       &args.mode_flag, 1},
+    //{"index",   no_argument,       &args.mode_flag, 1},
+    //{"search",  no_argument,       &args.mode_flag, 2},
     /* These options don’t set a flag.
              We distinguish them by their indices. */
     {"pattern", required_argument, 0, 'p'},
@@ -45,6 +45,20 @@ program_args get_program_parameters(int argc, char** argv) {
     {"count",   no_argument,       0, 'c'},
     {0, 0, 0, 0}
   };
+	
+	if (argc > 1) {
+		cout << "argc=" << argc << endl;
+		cout << "argv[1]=" << argv[1] << endl;
+		char* mode = argv[1];
+		if (strcmp(mode, "index")) {
+			args.mode_flag = 1;
+			optind++;
+		}
+		else if (strcmp(mode, "search")) {
+			args.mode_flag = 2;
+			optind++;
+		}
+	}
 
   while (1) {
     current_parameter = getopt_long(argc, argv, "p:hqc", long_options, &option_index);
@@ -76,7 +90,10 @@ program_args get_program_parameters(int argc, char** argv) {
       exit(1);
     }
   }
+	
 
+	cout << "optind=" << optind << endl;
+	
   if (optind < argc) {
     
     if (!args.pattern_file) {

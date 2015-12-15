@@ -13,9 +13,15 @@ int main (int argc, char **argv) {
 
   if (args.help_flag) {
     print_help_text();
-  } else {
-    if (!args.quiet_flag) {
-      cout << "Modo: " << (args.mode_flag ? "index" : "search") << endl;
+  } else if (args.mode_flag==1) { //Index mode
+		// Check if textfile exists		
+		create_index_file(args);
+	} else if (args.mode_flag==2) {	//Search mode
+		
+	}
+  /*  if (!args.quiet_flag) {
+			cout << args.mode_flag << endl;
+      cout << "Modo: " << (args.mode_flag==1 ? "index" : (args.mode_flag==2 ? "search" : "error")) << endl;
 
       if (args.pattern_file) {
         cout << "Arquivo de padrões: " << args.pattern_file << endl;
@@ -42,7 +48,7 @@ int main (int argc, char **argv) {
       if (!args.quiet_flag) cout << "Arquivos de texto a serem buscados:" << endl;
       search_index_file(args);
     }
-
+*/
     exit (0);
   }
 }
