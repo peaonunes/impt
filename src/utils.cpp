@@ -21,7 +21,8 @@ program_args::program_args()
     help_flag(false),
     quiet_flag(false),
     count_flag(false),
-    index_file(0) { }
+    index_file(0),
+    text_file(0) { }
 
 program_args::~program_args() {
 
@@ -41,27 +42,24 @@ program_args get_program_parameters(int argc, char** argv) {
              We distinguish them by their indices. */
     {"pattern", required_argument, 0, 'p'},
     {"help",    no_argument,       0, 'h'},
-    {"quiet",   no_argument,       0, 'q'},
     {"count",   no_argument,       0, 'c'},
     {0, 0, 0, 0}
   };
 	
 	if (argc > 1) {
-		cout << "argc=" << argc << endl;
-		cout << "argv[1]=" << argv[1] << endl;
 		char* mode = argv[1];
-		if (strcmp(mode, "index")) {
-			args.mode_flag = 1;
+		if (strcmp(mode, "index") == 0) {
+ 			args.mode_flag = 1;
 			optind++;
 		}
-		else if (strcmp(mode, "search")) {
-			args.mode_flag = 2;
+		else if (strcmp(mode, "search") == 0) {
+      args.mode_flag = 2;
 			optind++;
 		}
 	}
 
   while (1) {
-    current_parameter = getopt_long(argc, argv, "p:hqc", long_options, &option_index);
+    current_parameter = getopt_long(argc, argv, "p:hc", long_options, &option_index);
 
     if (current_parameter == -1) {
       break;
@@ -91,15 +89,23 @@ program_args get_program_parameters(int argc, char** argv) {
     }
   }
 	
-
-	cout << "optind=" << optind << endl;
-	
-  if (optind < argc) {
-    
-    if (!args.pattern_file) {
-      args.patterns.push_back(argv[optind++]);
+  if (args.mode_flag == 1) {
+    if (optind < argc) {
+      
+      args.text_file = argv[optind++];
     }
-  } //else error?
+  } else if (args.mode_flag == 2) {
+    if (optind < argc) {   
+      if (!args.pattern_file) {
+        args.patterns.push_back(argv[optind++]);
+      }
+    }
+    if (optind < argc) {
+      
+      args.index_file = argv[optind++];
+    }
+  }
+
 
   return args;
 }
@@ -111,7 +117,7 @@ void print_help_line(char const *msg1, char const *msg2) {
 void print_help_text() {
   cout << "Usage: ipmt mode ..." << endl;
   cout << "Options:" << endl;
-  print_help_line("  -q, --quiet", "Inhibits every output message");
+  print_help_line("  -c, --count", "Counts the pattern occurrences in the text");
   print_help_line("  -p, --pattern=<pattern file>","Specifies file from which the program should read the patterns to be used (each line of the file specifies a pattern)");
   print_help_line("  -h, --help","Shows this message");
   cout << endl << "  If a pattern file is not specified, the first argument given to pmt will be read as the only pattern to be searched for in the text file. Several source text files can be specified at the same time." << endl;
@@ -144,7 +150,7 @@ void read_pattern_file(program_args &args) {
 }
 
 void create_index_file(program_args &args) {
-  
+  cout << "Creatng index file" << endl;
 }
 
 /*
@@ -154,5 +160,5 @@ void create_index_file(program_args &args) {
  */
 
 void search_index_file(program_args &args) {
-  
+  cout << "Searching index file" << endl;
 }

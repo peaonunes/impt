@@ -14,6 +14,7 @@ struct program_args {
   bool quiet_flag;
   bool count_flag;
   char* index_file;
+  char* text_file;
 };
 
 program_args get_program_parameters(int argc, char** argv);
