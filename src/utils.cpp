@@ -2,13 +2,10 @@
 #include <stdlib.h>
 #include <iostream>
 #include <iomanip>
-#include <glob.h>
 #include <stdio.h>
 #include <cstring>
 #include <sys/types.h>
 #include <sys/stat.h>
-#include <unistd.h>
-#include <vector>
 
 #include "utils.h"
 #include "input/FileReader.h"
@@ -35,11 +32,6 @@ program_args get_program_parameters(int argc, char** argv) {
 	
   struct option long_options[] =
   {
-    /* These options set a flag */
-    //{"index",   no_argument,       &args.mode_flag, 1},
-    //{"search",  no_argument,       &args.mode_flag, 2},
-    /* These options don’t set a flag.
-             We distinguish them by their indices. */
     {"pattern", required_argument, 0, 'p'},
     {"help",    no_argument,       0, 'h'},
     {"count",   no_argument,       0, 'c'},
@@ -115,7 +107,11 @@ void print_help_line(char const *msg1, char const *msg2) {
 }
 
 void print_help_text() {
-  cout << "Usage: ipmt mode ..." << endl;
+  cout << "Usage:" << endl;
+  cout << "Index mode: ipmt index textfile" << endl;
+  cout << "Options:" << endl;
+  cout << "  None" << endl;
+  cout << "Search mode: ipmt search pattern indexfile" << endl;
   cout << "Options:" << endl;
   print_help_line("  -c, --count", "Counts the pattern occurrences in the text");
   print_help_line("  -p, --pattern=<pattern file>","Specifies file from which the program should read the patterns to be used (each line of the file specifies a pattern)");
@@ -127,13 +123,6 @@ int is_regular_file(const char *path) {
 		struct stat path_stat;
 		stat(path, &path_stat);
 		return S_ISREG(path_stat.st_mode);
-}
-
-/* globerr --- print error message for glob() */
-
-int glob_error(const char *path, int eerrno) {
-	fprintf(stderr, "pmt: %s: %s\n", path, strerror(eerrno));
-	return 0; /* let glob() keep going */
 }
 
 void read_pattern_file(program_args &args) {
@@ -152,12 +141,6 @@ void read_pattern_file(program_args &args) {
 void create_index_file(program_args &args) {
   cout << "Creatng index file" << endl;
 }
-
-/*
- * search_files --- searches source_text_files entries
- * whose name matches with one or more of the given
- * filenames
- */
 
 void search_index_file(program_args &args) {
   cout << "Searching index file" << endl;
