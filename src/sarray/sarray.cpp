@@ -155,12 +155,16 @@ int* build_sarray(char* text, int text_length, sarray_temp** P, int explimit) {
 		group_size <<= 1;
 	}
 
+	for (int i = 0; i < text_length; ++i) {
+		final_sarray[i] = stemp[i].start_index;
+	}
+
 	free(stemp);
 
 	return final_sarray;
 }
 
-int compute_lcp(sarray_temp** P, int i, int j, int text_length, int explimit) {
+int compute_LRlcp(sarray_temp** P, int i, int j, int text_length, int explimit) {
 	int lcp = 0;
 	int k = explimit - 1;
 	int aux;
@@ -189,8 +193,8 @@ void build_LRlcp(int* Llcp, int* Rlcp, int* sarray, sarray_temp** P, int explimi
 	if (right - left > 1) {
 		middle = (left + right) / 2;
 
-		Llcp[middle] = compute_lcp(P, sarray[left], sarray[middle], text_length, explimit);
-		Rlcp[middle] = compute_lcp(P, sarray[middle], sarray[right], text_length, explimit);
+		Llcp[middle] = compute_LRlcp(P, sarray[left], sarray[middle], text_length, explimit);
+		Rlcp[middle] = compute_LRlcp(P, sarray[middle], sarray[right], text_length, explimit);
 
 		build_LRlcp(Llcp, Rlcp, sarray, P, explimit, text_length, left, middle);
 		build_LRlcp(Llcp, Rlcp, sarray, P, explimit, text_length, middle, right);
@@ -220,4 +224,182 @@ void build_sarray_LRlcp(char* text, int text_length, int** sarray, int** Llcp, i
 		free(P[i]);
 	}
 	free(P);
+}
+
+int lcp(char* text1, char* text2) {
+	int lcp = 0;
+
+	while(text1[lcp] != '\0'
+					&& text2[lcp] != '\0'
+					&& text1[lcp] == text2[lcp]) {
+		++lcp;
+	}
+
+	return lcp;
+}
+
+int predecessor(char* text, int txtlen, char* pattern, int patlen, int* sarray, int* Llcp, int* Rlcp) {
+	int L = lcp(pattern, &text[sarray[0]]);
+	int R = lcp(pattern, &text[sarray[txtlen-1]]);
+	int l = 0;
+	int r = txtlen - 1;
+	int h, H;
+
+	// se o padrão for maior ou igual que o último sufixo
+	if (R == patlen
+				|| R + sarray[txtlen - 1] == txtlen
+				|| text[R + sarray[txtlen - 1]] < pattern[R]) {
+		return txtlen - 1;
+	}
+
+	// se o padrão for menor que o primeiro sufixo
+	if (L < patlen
+				&& L + sarray[0] < txtlen
+				&& text[L + sarray[0]] > pattern[L]) {
+		return -1;
+	}
+
+	while (r - l > 1) {
+		h = (l + r) / 2;
+
+		if (L >= R) {
+			if (L < Llcp[h]) {
+				l = h;
+			} else if (L == Llcp[h]) {
+				H = L + lcp(&pattern[L], &text[sarray[h] + L]);
+
+				// se o padrão for maior ou igual a o sufixo H
+				if (H == patlen
+							|| txtlen == H + sarray[h]
+							|| text[sarray[h] + H] < pattern[H]) {
+					l = h;
+					L = H;
+				} else {
+					r = h;
+					R = H;
+				}
+			} else {
+				r = h;
+				R = Llcp[h];
+			}
+		} else { // R > L
+			if (R < Rlcp[h]) {
+				r = h;
+			} else if (R == Rlcp[h]) {
+				H = R + lcp(&pattern[R], &text[sarray[h] + R]);
+
+				// se o padrão for maior ou igual ao sufixo H
+				if (H == patlen
+							|| txtlen == H + sarray[h]
+							|| text[sarray[h] + H] < pattern[H]) {
+					l = h;
+					L = H;
+				} else {
+					r = h;
+					R = H;
+				}
+			} else {
+				l = h;
+				L = Rlcp[h];
+			}
+		}
+	}
+
+	return l;
+}
+
+int successor(char* text, int txtlen, char* pattern, int patlen, int* sarray, int* Llcp, int* Rlcp) {
+	int L = lcp(pattern, &text[sarray[0]]);
+	int R = lcp(pattern, &text[sarray[txtlen - 1]]);
+	int l = 0;
+	int r = txtlen - 1;
+	int h, H;
+
+	// se o padrão for menor ou igual ao primeiro sufixo
+	if (L == patlen
+					||
+				(sarray[0] + L < txtlen
+					&& pattern[L] < text[sarray[0] + L])) {
+		return 0;
+	}
+
+	// se o padrão for maior que o último sufixo
+	if ((sarray[txtlen - 1] + R == txtlen
+				&& R < patlen)
+					||
+				(R < patlen
+					&& sarray[txtlen - 1] + R < txtlen
+					&& pattern[R] > text[sarray[txtlen - 1] + R])) {
+		return txtlen;
+	}
+
+	while (r - l > 1) {
+		h = (l + r) / 2;
+
+		if (L >= R) {
+			if (L < Llcp[h]) {
+				l = h;
+			} else if (L == Llcp[h]) {
+				H = L + lcp(&pattern[L], &text[sarray[h] + L]);
+
+				// se o padrão for menor ou igual ao sufixo H
+				if (H == patlen
+								||
+							(H + sarray[h] < txtlen
+								&& text[sarray[h] + H] > pattern[H])) {
+					r = h;
+					R = H;
+				} else {
+					l = h;
+					L = H;
+				}
+			} else {
+				r = h;
+				R = Llcp[h];
+			}
+		} else { // R > L
+			if (R < Rlcp[h]) {
+				r = h;
+			} else if (R == Rlcp[h]) {
+				H = R + lcp(&pattern[R], &text[sarray[h] + R]);
+
+				// se o padrão for menor ou igual ao sufixo H
+				if (H == patlen
+								||
+							(H + sarray[h] < txtlen
+								&& text[sarray[h] + H] > pattern[H])) {
+					r = h;
+					R = H;
+				} else {
+					l = h;
+					L = H;
+				}
+			} else {
+				l = h;
+				L = Rlcp[h];
+			}
+		}
+	}
+
+	return r;
+}
+
+int find_occurrences(int** matches, char* text, int txtlen, char* pattern, int patlen, int* sarray, int* Llcp, int* Rlcp) {
+	int pred = predecessor(text, txtlen, pattern, patlen, sarray, Llcp, Rlcp);
+	int succ = successor(text, txtlen, pattern, patlen, sarray, Llcp, Rlcp);
+	int array_size = 1;
+	int i = 0;
+
+	printf("pred: %d - succ: %d\n", pred, succ);
+
+	if (succ <= pred) {
+		array_size *= ((pred - succ) + 1);
+		(*matches) = (int*)malloc(array_size * sizeof(int));
+
+		for (i = succ; i <= pred; ++i) {
+			(*matches)[i - succ] = sarray[i];
+		}
+	}
+
+	return array_size;
 }
