@@ -49,9 +49,9 @@ void prefix_match(char* text, int txtlen, int cursor, int Ls, int Ll, uint16_t* 
 	(*jump) = result_jump;
 }
 
-uint8_t* lz77_encode(char* txt, int txtlen, int Ls, int Ll, int* code_length) {
+uint8_t* lz77_encode(char* txt, int txtlen, int Ls, int Ll, uint32_t* code_length) {
 	int cursor = 0;
-	int code_index = 0;
+	uint32_t code_index = 0;
 	uint8_t* code = (uint8_t*)malloc(3 * txtlen * sizeof(uint8_t));
 	uint16_t jump;
 	uint8_t match_length, next_char, ptr1, ptr2;

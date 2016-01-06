@@ -28,33 +28,37 @@ int main (int argc, char **argv) {
 		print_help_text();
 	} else {
 		if (!args.quiet_flag) {
-			if (args.pattern_file) {
-				cout << "Arquivo de padrões: " << args.pattern_file << endl;
+			if (searchActionSelected) {
+				if (args.pattern_file) {
+					cout << "Arquivo de padrões: " << args.pattern_file << endl;
 
-				read_pattern_file(args);
-			} else {
-				cout << "Nenhum arquivo de padrões foi fornecido." << endl;
+					read_pattern_file(args);
+				} else {
+					cout << "Nenhum arquivo de padrões foi fornecido." << endl;
 
-				if (args.patterns.empty()) {
-					cerr << "Nenhum padrão foi fornecido." << endl;
-					exit(1);
+					if (args.patterns.empty()) {
+						cerr << "Nenhum padrão foi fornecido." << endl;
+						exit(1);
+					}
+				}
+
+				cout << "Padrões fornecidos:" << endl;
+				for (int i = 0; i < args.patterns.size(); i++) {
+					cout << "  " << args.patterns[i] << endl;
 				}
 			}
-
-			cout << "Padrões fornecidos:" << endl;
-			for (int i = 0; i < args.patterns.size(); i++) {
-				cout << "  " << args.patterns[i] << endl;
-			}
 		} else {
-			if (args.pattern_file)
-				read_pattern_file(args);
-			else if (args.patterns.empty())
-				exit(1);
+			if (searchActionSelected) {
+				if (args.pattern_file)
+					read_pattern_file(args);
+				else if (args.patterns.empty())
+					exit(1);
+			}
 		}
 
 		if (args.source_index_file) {
 			if (indexActionSelected) {
-				createIndexFile(args.source_index_file);
+				create_index_file(args.source_index_file);
 			} else {
 				printf("Falta implementar a busca\n");
 			}

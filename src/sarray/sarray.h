@@ -17,10 +17,9 @@ void build_sarray_LRlcp(char* text, int text_length, int** sarray, int** Llcp, i
 // patlen: Comprimento do padrão
 // sarray: array de sufixos do texto
 // Llcp, Rlcp: arrays com os prefixos comuns da busca binária
-// Retorna a quantidade de ocorrências encontradas
-int find_occurrences(int* matches_start, int* matches_end, char* text, int txtlen, char* pattern, int patlen, int* sarray, int* Llcp, int* Rlcp);
+void find_occurrences(int* matches_start, int* matches_end, char* text, int txtlen, char* pattern, int patlen, int* sarray, int* Llcp, int* Rlcp);
 // Função utilizada para transformar os arrays em arrays de bytes
 // para compressão e serialização
-uint8_t* get_bytes_from_array(int* array, size_t arraylen);
+char* get_bytes_from_array(int* array, uint32_t arraylen);
 
 #endif

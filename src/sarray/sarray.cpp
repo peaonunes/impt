@@ -394,11 +394,11 @@ void find_occurrences(int* matches_start, int* matches_end, char* text, int txtl
 }
 
 // A ser usado para a compressão
-uint8_t* get_bytes_from_array(int* array, size_t arraylen) {
-	size_t result_size = arraylen * sizeof(int);
-	uint8_t *result = (uint8_t*)malloc(result_size);
-	size_t result_index = 0;
-	size_t array_index = 0;
+char* get_bytes_from_array(int* array, uint32_t arraylen) {
+	uint32_t result_size = arraylen * sizeof(int);
+	char *result = (char*)malloc(result_size);
+	uint32_t result_index = 0;
+	uint32_t array_index = 0;
 
 	while(array_index < arraylen) {
 		result[result_index++] = array[array_index] & 0xf000;
