@@ -1,7 +1,7 @@
-#include <stdio.h>
-#include <stdlib.h>
-#include <math.h>
-#include <string.h>
+#include <cstdio>
+#include <cstdlib>
+#include <cmath>
+#include <cstring>
 
 #include "sarray.h"
 
@@ -385,21 +385,29 @@ int successor(char* text, int txtlen, char* pattern, int patlen, int* sarray, in
 	return r;
 }
 
-int find_occurrences(int** matches, char* text, int txtlen, char* pattern, int patlen, int* sarray, int* Llcp, int* Rlcp) {
+void find_occurrences(int* matches_start, int* matches_end, char* text, int txtlen, char* pattern, int patlen, int* sarray, int* Llcp, int* Rlcp) {
 	int pred = predecessor(text, txtlen, pattern, patlen, sarray, Llcp, Rlcp);
 	int succ = successor(text, txtlen, pattern, patlen, sarray, Llcp, Rlcp);
-	int array_size = ((pred - succ) + 1);
-	int i = 0;
 
-	printf("pred: %d - succ: %d\n", pred, succ);
+	(*matches_start) = succ;
+	(*matches_end) = pred;
+}
 
-	if (array_size) {
-		(*matches) = (int*)malloc(array_size * sizeof(int));
+// A ser usado para a compressão
+uint8_t* get_bytes_from_array(int* array, size_t arraylen) {
+	size_t result_size = arraylen * sizeof(int);
+	uint8_t *result = (uint8_t*)malloc(result_size);
+	size_t result_index = 0;
+	size_t array_index = 0;
 
-		for (i = succ; i <= pred; ++i) {
-			(*matches)[i - succ] = sarray[i];
-		}
+	while(array_index < arraylen) {
+		result[result_index++] = array[array_index] & 0xf000;
+		result[result_index++] = array[array_index] & 0x0f00;
+		result[result_index++] = array[array_index] & 0x00f0;
+		result[result_index++] = array[array_index] & 0x000f;
+
+		++array_index;
 	}
 
-	return array_size;
+	return result;
 }
