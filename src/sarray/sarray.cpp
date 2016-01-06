@@ -388,13 +388,12 @@ int successor(char* text, int txtlen, char* pattern, int patlen, int* sarray, in
 int find_occurrences(int** matches, char* text, int txtlen, char* pattern, int patlen, int* sarray, int* Llcp, int* Rlcp) {
 	int pred = predecessor(text, txtlen, pattern, patlen, sarray, Llcp, Rlcp);
 	int succ = successor(text, txtlen, pattern, patlen, sarray, Llcp, Rlcp);
-	int array_size = 1;
+	int array_size = ((pred - succ) + 1);
 	int i = 0;
 
 	printf("pred: %d - succ: %d\n", pred, succ);
 
-	if (succ <= pred) {
-		array_size *= ((pred - succ) + 1);
+	if (array_size) {
 		(*matches) = (int*)malloc(array_size * sizeof(int));
 
 		for (i = succ; i <= pred; ++i) {
