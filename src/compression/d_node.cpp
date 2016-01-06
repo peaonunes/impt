@@ -9,17 +9,17 @@ d_node::d_node() {
 	right = NULL;
 }
 
-d_node::d_node(char c, int _label, d_node* _parent) {
+d_node::d_node(char c, int l, d_node* p) {
 	initialized = true;
 	byte = c;
-	label = _label;
-	parent = _parent;
+	label = l;
+	parent = p;
 	left = NULL;
 	right = NULL;
 }
 
 /* Searches for a determined node value in the dictionary tree */
-d_node* d_node::find_child(char c){
+d_node* d_node::find_entry(char c){
 	if 	((&right) == NULL) return NULL;
 	d_node * cur = right;
 	while (cur != NULL) {
@@ -30,7 +30,7 @@ d_node* d_node::find_child(char c){
 }
 
 /* Adds a new value to the dictionary tree */
-d_node* d_node::insert_child(char byte, int label){
+d_node* d_node::insert_entry(char byte, int label){
 	if(right == NULL || !right->initialized) {
 		right = new d_node(byte,label,this);
 		return right;

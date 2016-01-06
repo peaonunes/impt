@@ -4,6 +4,8 @@
 #include <iomanip>
 #include <stdio.h>
 #include <cstring>
+#include <vector>
+#include <cstdint>
 #include <sys/types.h>
 #include <sys/stat.h>
 
@@ -11,6 +13,7 @@
 #include "input/FileReader.h"
 #include "sarray/sarray.h"
 #include "compression/lz78.h"
+#include "compression/lz77.h"
 
 using namespace std;
 
@@ -18,16 +21,14 @@ program_args::program_args()
   : mode_flag(0),
     pattern_file(0),
     help_flag(false),
-    quiet_flag(false),
     count_flag(false),
     index_file(0),
     text_file(0) { }
 
-program_args::~program_args() {
-
-}
+program_args::~program_args() { }
 
 program_args get_program_parameters(int argc, char** argv) {
+
   int option_index;
   int current_parameter;
   program_args args;
@@ -63,9 +64,6 @@ program_args get_program_parameters(int argc, char** argv) {
       case 0:
       // No momento, nenhum argumento está sendo usado para setar uma flag
       break;
-      case 'q':
-      args.quiet_flag = true;
-      break;
       case 'p':
       args.pattern_file = optarg;
       break;
@@ -100,7 +98,6 @@ program_args get_program_parameters(int argc, char** argv) {
     }
   }
 
-
   return args;
 }
 
@@ -128,71 +125,85 @@ int is_regular_file(const char *path) {
 }
 
 void read_pattern_file(program_args &args) {
-  FileReader fr(args.pattern_file);
-  string buffer;
-
-  while(fr.hasContent()) {
-    buffer = fr.readLine();
-
-    if (buffer.size()) {
-      args.patterns.push_back(buffer);
-    }
-  }
-}
-
-void create_index_file(program_args &args) {
-  // cout << "Creatng index file" << endl;
-  ifstream fileStream(args.text_file);
-  string text;
-  if (fileStream.good()) {
-
-    // Text length
-    fileStream.seekg(0, ios::end);
-    int length = fileStream.tellg();
-    fileStream.seekg(0, ios::beg);
-    
-    // Assigning file to a string
-    text.assign((istreambuf_iterator<char>(fileStream)),
-                istreambuf_iterator<char>());
-    fileStream.close();
-    
-    // cout << text << endl;
-    
-    char* writable = new char[text.size() + 1];
-    std::copy(text.begin(), text.end(), writable);
-    writable[text.size()] = '\0'; // don't forget the terminating 0
-
-    int* sarray;
-    int* Llcp;
-    int* Rlcp;
-
-    //build_sarray_LRlcp(writable, length, &sarray, &Llcp, &Rlcp);
-
-    //cout << "Sarray done." << endl;
-
-    // Compress and store in a file.
-
-    encrypt(text);
-    /*cout << "Encryption: " << endl;
-    string code = encrypt(text);
-    cout << code << endl;
-    cout << "/Encryption: " << endl;
-    cout << "Decryption: " << endl;
-    string dec = decode(code);
-    cout << dec << endl;
-    cout << "/Decryption: " << endl;*/
-    
-    delete[] writable;
-
-  } else {
-    cerr << "Error reading text file." << endl;
-    exit(1);
-  }
-
-
+	FileReader fr(args.pattern_file);
+	string buffer;
+	
+	while(fr.hasContent()) {
+		buffer = fr.readLine();
+	
+		if (buffer.size()) {
+			args.patterns.push_back(buffer);
+		}
+	}
 }
 
 void search_index_file(program_args &args) {
   // cout << "Searching index file" << endl;
-  decode("");
+	
+}
+
+void create_index_file(char* source_file) {
+	FILE* fp = fopen(source_file, "r");
+	uint32_t size;
+	uint32_t code_len;
+	char *text;
+	char *index_name = "teste.idx";
+	int* sarray;
+	int* Llcp;
+	int* Rlcp;
+	char* byte_array;
+	uint8_t* encoded_byte_array;
+	int Ls = (1 << 12) - 1;
+	int Ll = (1 << 4) - 1;
+
+	if (fp) {
+		fseek(fp, 0, SEEK_END);
+		size = ftell(fp);
+		fseek(fp, 0, SEEK_SET);
+		text = (char*)malloc((size + 1)*sizeof(char));
+		fread(text, sizeof(char), size, fp);
+		text[size] = 0;
+		fclose(fp);
+
+		build_sarray_LRlcp(text, size, &sarray, &Llcp, &Rlcp);
+
+		fp = fopen(index_name, "wb+");
+
+		if (fp) {
+			fwrite(&size, sizeof(uint32_t), 1, fp);
+
+			encoded_byte_array = lz77_encode(text, size, Ls, Ll, &code_len);
+			fwrite(encoded_byte_array, sizeof(uint8_t), code_len, fp);
+			free(encoded_byte_array);
+
+			byte_array = get_bytes_from_array(sarray, size);
+			free(sarray);
+			encoded_byte_array = lz77_encode(byte_array, size * 4, Ls, Ll, &code_len);
+			free(byte_array);
+			fwrite(encoded_byte_array, sizeof(uint8_t), code_len, fp);
+			free(encoded_byte_array);
+
+			byte_array = get_bytes_from_array(Llcp, size);
+			free(Llcp);
+			encoded_byte_array = lz77_encode(byte_array, size * 4, Ls, Ll, &code_len);
+			free(byte_array);
+			fwrite(encoded_byte_array, sizeof(uint8_t), code_len, fp);
+			free(encoded_byte_array);
+
+			byte_array = get_bytes_from_array(Rlcp, size);
+			free(Rlcp);
+			encoded_byte_array = lz77_encode(byte_array, size * 4, Ls, Ll, &code_len);
+			free(byte_array);
+			fwrite(encoded_byte_array, sizeof(uint8_t), code_len, fp);
+			free(encoded_byte_array);
+
+			fclose(fp);
+		} else {
+			printf("Erro ao abrir o arquivo %s\n", index_name);
+			exit(1);
+		}
+	} else {
+		printf("Erro ao abrir o arquivo %s\n", source_file);
+		exit(1);
+	}
 }

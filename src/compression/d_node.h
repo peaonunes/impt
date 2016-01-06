@@ -10,7 +10,7 @@ public:
 	
 	/* Methods */
 	d_node();
-	d_node(char c, int l, d_node* par);
-	d_node* find_child(char c);
-	d_node* insert_child(char byte, int label);
+	d_node(char c, int l, d_node* p);
+	d_node* find_entry(char c);
+	d_node* insert_entry(char byte, int label);
 };

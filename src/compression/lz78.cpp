@@ -1,35 +1,18 @@
 #include <iostream>
 #include <cstddef>
+#include <stdio.h>
+#include <string.h>
 
 #include "lz78.h"
 #include "d_node.h"
 
-void print_d_node (d_node *root) {
-  d_node *temp;
-
-  if    (root == NULL) return;
-  std::cout << "label " << root->label << ", byte ";
-  if    (root->byte == '\n') std::cout << "'\\n'";
-  else  std::cout << "'" << root->byte << "'\n";
-  if    (root->right) std::cout << "  children: ";
-  for   (temp = root->right; temp; temp = temp->left) {
-    std::cout << "(" << temp->label << ", ";
-    if    (temp->byte == '\n') std::cout << "'\\n') ";
-    else  std::cout << "'" << temp->byte << "') ";
-  }
-  std::cout << std::endl;
-  for   (temp = root->right; temp; temp = temp->left)
-    print_d_node(temp);
-}
-
-
 void print_label (int label, int max_label) {
   unsigned char buffer = 0;
-  int buffer_size = 0;   // when this gets to 8, print out buffer.
+  int buffer_size = 0;
   int mask;
 
   if    (max_label == 0) return;
-  for   (mask = 1; max_label > 1; max_label /=2) mask *= 2; // get high order bit
+  for   (mask = 1; max_label > 1; max_label /=2) mask *= 2;
   
   for   (; mask != 0; mask /= 2) {
     buffer = buffer * 2 + ((label & mask) / mask);
@@ -59,7 +42,7 @@ int read_label (int max_label) {
 
   for   (label=0; max_label != 0; max_label /= 2) {
     if  (how_full == 0) {
-      buffer = fgetc(stdin);  // C-ism to handle objectcenter bug
+      buffer = fgetc(stdin);
       if  (buffer == EOF) return -1;
       how_full = 8;
     }
@@ -71,7 +54,6 @@ int read_label (int max_label) {
 
 }
 
-/* use like cin.get(c). returns 1 normally, or 0 on end of file */
 int read_letter (char &c) {
   int val = read_label(128);
   if (val == -1) return 0;
@@ -79,31 +61,27 @@ int read_letter (char &c) {
   return 1;
 }
 
-std::string encrypt (std::string text){
+std::string lz78_encode (char* text){
   int max_label = (1 << 25);
   int count = 1;
   d_node * head = new d_node(NULL, 0, (d_node *)NULL);
   d_node *cur = head;
   int i = 0;
   char c;
-  std::string code = "";
-  int text_length = text.size();
+  char* code;
+  int text_length = strlen(text);
   while(i < text_length) {
-    c = text.at(i);
+    c = text[i];
     i++;
-    d_node * loc = cur->find_child(c);
-    if(loc == NULL) {
+    d_node* dict_entry = cur->find_entry(c);
+    if(dict_entry == NULL) {
       print_label(cur->label, max_label);
       print_letter(c);
-      cur->insert_child(c, count);
+      cur->insert_entry(c, count);
       count++;
-      if(count >= max_label) {
-        std::cerr << "ERROR: Number of labels exceeded maximum number set.\n\n";
-        return "";
-      }
       cur = head;
     } else {
-      cur = loc;
+      cur = dict_entry;
     }
   }
   print_final_label(cur->label, max_label);
@@ -112,7 +90,7 @@ std::string encrypt (std::string text){
 
 d_node **all;
 
-std::string print_path(d_node *last_node, bool error = false, bool newLine = false) {
+std::string decode_path(d_node *last_node, bool error = false, bool newLine = false) {
   std::string str = "";
   while(last_node != NULL && last_node->parent != NULL) {
     str =last_node->byte + str;
@@ -136,7 +114,7 @@ void expand_array(long size) {
   }
 }
 
-std::string decode (std::string code) {
+std::string lz78_decode (std::string code) {
   int max_label = (1 << 25);
   int count = 1;
   d_node * head = new d_node(NULL, 0, (d_node *)NULL);
@@ -157,14 +135,14 @@ std::string decode (std::string code) {
       if( &c == NULL ) {
         newN = cur;
       } else {
-        newN = cur->insert_child(c, count);
+        newN = cur->insert_entry(c, count);
         while(count >= size) {
           expand_array(size);
           size = size*2;
         }
         all[count] = newN;
       }
-      print_path(newN);
+      decode_path(newN);
       count++;
     }
     c = nextC;
@@ -176,7 +154,7 @@ std::string decode (std::string code) {
     d_node * newN;
     d_node * cur = all[label];
     newN = cur;
-    print_path(newN);
+    decode_path(newN);
     count++;
   }
 }

@@ -3,7 +3,7 @@
 
 #include <string>
 
-std::string encrypt(std::string text);
-std::string decode(std::string text);
+std::string lz78_encode(std::string text);
+std::string lz78_decode(std::string text);
 
 #endif
