@@ -9,6 +9,8 @@
 
 #include "utils.h"
 #include "input/FileReader.h"
+#include "sarray/sarray.h"
+#include "compression/lz78.h"
 
 using namespace std;
 
@@ -139,9 +141,58 @@ void read_pattern_file(program_args &args) {
 }
 
 void create_index_file(program_args &args) {
-  cout << "Creatng index file" << endl;
+  // cout << "Creatng index file" << endl;
+  ifstream fileStream(args.text_file);
+  string text;
+  if (fileStream.good()) {
+
+    // Text length
+    fileStream.seekg(0, ios::end);
+    int length = fileStream.tellg();
+    fileStream.seekg(0, ios::beg);
+    
+    // Assigning file to a string
+    text.assign((istreambuf_iterator<char>(fileStream)),
+                istreambuf_iterator<char>());
+    fileStream.close();
+    
+    // cout << text << endl;
+    
+    char* writable = new char[text.size() + 1];
+    std::copy(text.begin(), text.end(), writable);
+    writable[text.size()] = '\0'; // don't forget the terminating 0
+
+    int* sarray;
+    int* Llcp;
+    int* Rlcp;
+
+    //build_sarray_LRlcp(writable, length, &sarray, &Llcp, &Rlcp);
+
+    //cout << "Sarray done." << endl;
+
+    // Compress and store in a file.
+
+    encrypt(text);
+    /*cout << "Encryption: " << endl;
+    string code = encrypt(text);
+    cout << code << endl;
+    cout << "/Encryption: " << endl;
+    cout << "Decryption: " << endl;
+    string dec = decode(code);
+    cout << dec << endl;
+    cout << "/Decryption: " << endl;*/
+    
+    delete[] writable;
+
+  } else {
+    cerr << "Error reading text file." << endl;
+    exit(1);
+  }
+
+
 }
 
 void search_index_file(program_args &args) {
-  cout << "Searching index file" << endl;
+  // cout << "Searching index file" << endl;
+  decode("");
 }
