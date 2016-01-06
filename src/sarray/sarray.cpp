@@ -1,7 +1,7 @@
-#include <stdio.h>
-#include <stdlib.h>
-#include <math.h>
-#include <string.h>
+#include <cstdio>
+#include <cstdlib>
+#include <cmath>
+#include <cstring>
 
 #include "sarray.h"
 
@@ -66,7 +66,7 @@ void heapify_temp_sarray(int index, int length, sarray_temp* stemp) {
 
 	while (childIndex < length) {
 		if ((length - childIndex > 1)
-					&& cmp(stemp, childIndex, childIndex + 1) < 0) {
+				&& cmp(stemp, childIndex, childIndex + 1) < 0) {
 			++childIndex;
 		}
 
@@ -144,9 +144,10 @@ int* build_sarray(char* text, int text_length, sarray_temp** P, int explimit) {
 		aux = 0;
 
 		for (int i = 0; i < text_length; ++i) {
-			if (i > 0 &&
+			if (i > 0
+					&&
 					(stemp[i].first_block_order != stemp[i - 1].first_block_order
-						|| stemp[i].second_block_order != stemp[i - 1].second_block_order))
+					|| stemp[i].second_block_order != stemp[i - 1].second_block_order))
 				++aux;
 
 			final_sarray[stemp[i].start_index] = aux;
@@ -230,8 +231,8 @@ int lcp(char* text1, char* text2) {
 	int lcp = 0;
 
 	while(text1[lcp] != '\0'
-					&& text2[lcp] != '\0'
-					&& text1[lcp] == text2[lcp]) {
+			&& text2[lcp] != '\0'
+			&& text1[lcp] == text2[lcp]) {
 		++lcp;
 	}
 
@@ -247,15 +248,15 @@ int predecessor(char* text, int txtlen, char* pattern, int patlen, int* sarray, 
 
 	// se o padrão for maior ou igual que o último sufixo
 	if (R == patlen
-				|| R + sarray[txtlen - 1] == txtlen
-				|| text[R + sarray[txtlen - 1]] < pattern[R]) {
+			|| R + sarray[txtlen - 1] == txtlen
+			|| text[R + sarray[txtlen - 1]] < pattern[R]) {
 		return txtlen - 1;
 	}
 
 	// se o padrão for menor que o primeiro sufixo
 	if (L < patlen
-				&& L + sarray[0] < txtlen
-				&& text[L + sarray[0]] > pattern[L]) {
+			&& L + sarray[0] < txtlen
+			&& text[L + sarray[0]] > pattern[L]) {
 		return -1;
 	}
 
@@ -270,8 +271,8 @@ int predecessor(char* text, int txtlen, char* pattern, int patlen, int* sarray, 
 
 				// se o padrão for maior ou igual a o sufixo H
 				if (H == patlen
-							|| txtlen == H + sarray[h]
-							|| text[sarray[h] + H] < pattern[H]) {
+						|| txtlen == H + sarray[h]
+						|| text[sarray[h] + H] < pattern[H]) {
 					l = h;
 					L = H;
 				} else {
@@ -290,8 +291,8 @@ int predecessor(char* text, int txtlen, char* pattern, int patlen, int* sarray, 
 
 				// se o padrão for maior ou igual ao sufixo H
 				if (H == patlen
-							|| txtlen == H + sarray[h]
-							|| text[sarray[h] + H] < pattern[H]) {
+						|| txtlen == H + sarray[h]
+						|| text[sarray[h] + H] < pattern[H]) {
 					l = h;
 					L = H;
 				} else {
@@ -317,19 +318,19 @@ int successor(char* text, int txtlen, char* pattern, int patlen, int* sarray, in
 
 	// se o padrão for menor ou igual ao primeiro sufixo
 	if (L == patlen
-					||
-				(sarray[0] + L < txtlen
-					&& pattern[L] < text[sarray[0] + L])) {
+			||
+		(sarray[0] + L < txtlen
+			&& pattern[L] < text[sarray[0] + L])) {
 		return 0;
 	}
 
 	// se o padrão for maior que o último sufixo
 	if ((sarray[txtlen - 1] + R == txtlen
-				&& R < patlen)
-					||
-				(R < patlen
-					&& sarray[txtlen - 1] + R < txtlen
-					&& pattern[R] > text[sarray[txtlen - 1] + R])) {
+		&& R < patlen)
+			||
+		(R < patlen
+			&& sarray[txtlen - 1] + R < txtlen
+			&& pattern[R] > text[sarray[txtlen - 1] + R])) {
 		return txtlen;
 	}
 
@@ -344,9 +345,9 @@ int successor(char* text, int txtlen, char* pattern, int patlen, int* sarray, in
 
 				// se o padrão for menor ou igual ao sufixo H
 				if (H == patlen
-								||
-							(H + sarray[h] < txtlen
-								&& text[sarray[h] + H] > pattern[H])) {
+							||
+						(H + sarray[h] < txtlen
+						&& text[sarray[h] + H] > pattern[H])) {
 					r = h;
 					R = H;
 				} else {
@@ -365,9 +366,9 @@ int successor(char* text, int txtlen, char* pattern, int patlen, int* sarray, in
 
 				// se o padrão for menor ou igual ao sufixo H
 				if (H == patlen
-								||
-							(H + sarray[h] < txtlen
-								&& text[sarray[h] + H] > pattern[H])) {
+						||
+						(H + sarray[h] < txtlen
+						&& text[sarray[h] + H] > pattern[H])) {
 					r = h;
 					R = H;
 				} else {
@@ -384,22 +385,29 @@ int successor(char* text, int txtlen, char* pattern, int patlen, int* sarray, in
 	return r;
 }
 
-int find_occurrences(int** matches, char* text, int txtlen, char* pattern, int patlen, int* sarray, int* Llcp, int* Rlcp) {
+void find_occurrences(int* matches_start, int* matches_end, char* text, int txtlen, char* pattern, int patlen, int* sarray, int* Llcp, int* Rlcp) {
 	int pred = predecessor(text, txtlen, pattern, patlen, sarray, Llcp, Rlcp);
 	int succ = successor(text, txtlen, pattern, patlen, sarray, Llcp, Rlcp);
-	int array_size = 1;
-	int i = 0;
 
-	printf("pred: %d - succ: %d\n", pred, succ);
+	(*matches_start) = succ;
+	(*matches_end) = pred;
+}
 
-	if (succ <= pred) {
-		array_size *= ((pred - succ) + 1);
-		(*matches) = (int*)malloc(array_size * sizeof(int));
+// A ser usado para a compressão
+char* get_bytes_from_array(int* array, uint32_t arraylen) {
+	uint32_t result_size = arraylen * sizeof(int);
+	char *result = (char*)malloc(result_size);
+	uint32_t result_index = 0;
+	uint32_t array_index = 0;
 
-		for (i = succ; i <= pred; ++i) {
-			(*matches)[i - succ] = sarray[i];
-		}
+	while(array_index < arraylen) {
+		result[result_index++] = array[array_index] & 0xf000;
+		result[result_index++] = array[array_index] & 0x0f00;
+		result[result_index++] = array[array_index] & 0x00f0;
+		result[result_index++] = array[array_index] & 0x000f;
+
+		++array_index;
 	}
 
-	return array_size;
+	return result;
 }
