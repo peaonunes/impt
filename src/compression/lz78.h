@@ -3,7 +3,7 @@
 
 #include <string>
 
-std::string lz78_encode(std::string text);
-std::string lz78_decode(std::string text);
+uint8_t* lz78_encode (char* text, int text_length, uint32_t* code_length);
+char* lz78_decode(uint8_t* text);
 
 #endif

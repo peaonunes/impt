@@ -147,7 +147,13 @@ void create_index_file(char* source_file) {
 	uint32_t size;
 	uint32_t code_len;
 	char *text;
-	char *index_name = "teste.idx";
+
+	/* index file name */
+	int source_name_length = (strrchr(source_file, '/')-source_file+1);
+	char *index_name = new char[strlen(source_file) - source_name_length + 5];
+	memcpy(index_name, &source_file[source_name_length], strlen(source_file) - source_name_length);
+	strcat(index_name, ".idx");
+	
 	int* sarray;
 	int* Llcp;
 	int* Rlcp;
@@ -196,7 +202,7 @@ void create_index_file(char* source_file) {
 			free(byte_array);
 			fwrite(encoded_byte_array, sizeof(uint8_t), code_len, fp);
 			free(encoded_byte_array);
-
+			
 			fclose(fp);
 		} else {
 			printf("Erro ao abrir o arquivo %s\n", index_name);
