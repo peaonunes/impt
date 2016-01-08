@@ -2,89 +2,103 @@
 #include <stdlib.h>
 #include <iostream>
 #include <iomanip>
-#include <glob.h>
 #include <stdio.h>
 #include <cstring>
 #include <vector>
 #include <cstdint>
+#include <sys/types.h>
+#include <sys/stat.h>
 
 #include "utils.h"
-#include "compression/lz77.h"
+#include "input/FileReader.h"
 #include "sarray/sarray.h"
+#include "compression/lz78.h"
+#include "compression/lz77.h"
 
 using namespace std;
 
 program_args::program_args()
-: pattern_file(0),
-quiet_flag(false),
-help_flag(false),
-count_mode(false),
-source_index_file(0) { }
+  : mode_flag(0),
+    pattern_file(0),
+    help_flag(false),
+    count_flag(false),
+    index_file(0),
+    text_file(0) { }
 
-program_args::~program_args() {
-
-}
+program_args::~program_args() { }
 
 program_args get_program_parameters(int argc, char** argv) {
-	int option_index;
-	int current_parameter;
-	program_args args;
 
-	struct option long_options[] =
-	{
-		{"quiet",   no_argument,	   0, 'q'},
-		{"count",   no_argument,	   0, 'c'},
-		{"pattern", required_argument, 0, 'p'},
-		{"help",	no_argument,	   0, 'h'},
-		{0, 0, 0, 0}
-	};
-
-	while (1) {
-		current_parameter = getopt_long(argc, argv, "qcp:h", long_options, &option_index);
-
-		if (current_parameter == -1) {
-			break;
+  int option_index;
+  int current_parameter;
+  program_args args;
+	
+  struct option long_options[] =
+  {
+    {"pattern", required_argument, 0, 'p'},
+    {"help",    no_argument,       0, 'h'},
+    {"count",   no_argument,       0, 'c'},
+    {0, 0, 0, 0}
+  };
+	
+	if (argc > 1) {
+		char* mode = argv[1];
+		if (strcmp(mode, "index") == 0) {
+ 			args.mode_flag = 1;
+			optind++;
 		}
-
-		switch (current_parameter) {
-			case 0:
-			// No momento, nenhum argumento está sendo usado para setar uma flag
-			break;
-			case 'q':
-			args.quiet_flag = true;
-			break;
-			case 'c':
-			args.count_mode = true;
-			break;
-			case 'p':
-			args.pattern_file = optarg;
-			break;
-			case 'h':
-			args.help_flag = true;
-			break;
-			case '?':
-			// Um argumento desconhecido é apenas ignorado no momento
-			break;
-			default:
-			exit(1);
+		else if (strcmp(mode, "search") == 0) {
+      args.mode_flag = 2;
+			optind++;
 		}
 	}
 
-	if (optind < argc) {
-		/* Legacy text
-		If pattern_flag is set, then the remaining arguments
-		are target textfiles. Otherwise, the first one will be
-		the pattern string*/
-		if (!args.pattern_file) {
-			args.patterns.push_back(argv[optind++]);
-		}
+  while (1) {
+    current_parameter = getopt_long(argc, argv, "p:hc", long_options, &option_index);
 
-		if (optind < argc) {
-			args.source_index_file = argv[optind];
-		}
-	}
+    if (current_parameter == -1) {
+      break;
+    }
 
-	return args;
+    switch (current_parameter) {
+      case 0:
+      // No momento, nenhum argumento está sendo usado para setar uma flag
+      break;
+      case 'p':
+      args.pattern_file = optarg;
+      break;
+      case 'h':
+      args.help_flag = true;
+      break;
+      case 'c':
+      args.count_flag = true;
+      break;
+      case '?':
+      // Um argumento desconhecido é apenas ignorado no momento
+      break;
+      default:
+      exit(1);
+    }
+  }
+	
+  if (args.mode_flag == 1) {
+    if (optind < argc) {
+      
+      args.text_file = argv[optind++];
+    }
+  } else if (args.mode_flag == 2) {
+    if (optind < argc) {   
+      if (!args.pattern_file) {
+        args.patterns.push_back(argv[optind++]);
+      }
+    }
+    if (optind < argc) {
+      
+      args.index_file = argv[optind++];
+    }
+  }
+
+  return args;
 }
 
 void print_help_line(char const *msg1, char const *msg2) {
@@ -92,26 +106,40 @@ void print_help_line(char const *msg1, char const *msg2) {
 }
 
 void print_help_text() {
-	cout << "Usage: pmt [options] [pattern] textfilepath [textfilepath ...]" << endl;
-	cout << "Options:" << endl;
-	print_help_line("  -q, --quiet", "Inhibits every output message");
-	print_help_line("  -c, --count", "Counts occurrences instead of showing them");
-	print_help_line("  -p, --pattern=<pattern file>","Specifies file from which the program should read the patterns to be used (each line of the file specifies a pattern)");
-	print_help_line("  -h, --help","Shows this message");
-	cout << endl << "  If a pattern file is not specified, the first argument given to pmt will be read as the only pattern to be searched for in the text file. Several source text files can be specified at the same time." << endl;
+  cout << "Usage:" << endl;
+  cout << "Index mode: ipmt index textfile" << endl;
+  cout << "Options:" << endl;
+  cout << "  None" << endl;
+  cout << "Search mode: ipmt search pattern indexfile" << endl;
+  cout << "Options:" << endl;
+  print_help_line("  -c, --count", "Counts the pattern occurrences in the text");
+  print_help_line("  -p, --pattern=<pattern file>","Specifies file from which the program should read the patterns to be used (each line of the file specifies a pattern)");
+  print_help_line("  -h, --help","Shows this message");
+  cout << endl << "  If a pattern file is not specified, the first argument given to pmt will be read as the only pattern to be searched for in the text file. Several source text files can be specified at the same time." << endl;
+}
+
+int is_regular_file(const char *path) {
+		struct stat path_stat;
+		stat(path, &path_stat);
+		return S_ISREG(path_stat.st_mode);
 }
 
 void read_pattern_file(program_args &args) {
-	// FileReader fr(args.pattern_file);
-	// string buffer;
-	//
-	// while(fr.hasContent()) {
-	// 	buffer = fr.readLine();
-	//
-	// 	if (buffer.size()) {
-	// 		args.patterns.push_back(buffer);
-	// 	}
-	// }
+	FileReader fr(args.pattern_file);
+	string buffer;
+	
+	while(fr.hasContent()) {
+		buffer = fr.readLine();
+	
+		if (buffer.size()) {
+			args.patterns.push_back(buffer);
+		}
+	}
+}
+
+void search_index_file(program_args &args) {
+  // cout << "Searching index file" << endl;
+	
 }
 
 void create_index_file(char* source_file) {
@@ -119,7 +147,13 @@ void create_index_file(char* source_file) {
 	uint32_t size;
 	uint32_t code_len;
 	char *text;
-	char *index_name = "teste.idx";
+
+	/* index file name */
+	int source_name_length = (strrchr(source_file, '/')-source_file+1);
+	char *index_name = new char[strlen(source_file) - source_name_length + 5];
+	memcpy(index_name, &source_file[source_name_length], strlen(source_file) - source_name_length);
+	strcat(index_name, ".idx");
+	
 	int* sarray;
 	int* Llcp;
 	int* Rlcp;
@@ -168,7 +202,7 @@ void create_index_file(char* source_file) {
 			free(byte_array);
 			fwrite(encoded_byte_array, sizeof(uint8_t), code_len, fp);
 			free(encoded_byte_array);
-
+			
 			fclose(fp);
 		} else {
 			printf("Erro ao abrir o arquivo %s\n", index_name);
