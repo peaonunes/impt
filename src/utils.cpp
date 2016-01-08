@@ -155,21 +155,6 @@ void search_index_file(program_args &args) {
 	int Ls = (1 << 12) - 1;
 	int Ll = (1 << 4) - 1;
 
-	fread(&size, sizeof(uint32_t), 1, fp);
-	fread(&code_len, sizeof(uint32_t), 1, fp);
-
-	cout << "size: " << size << ", code_len: " << code_len << endl;
-
-	encoded_byte_array = (uint8_t*)malloc((code_len + 1)*sizeof(uint8_t));
-	fread(encoded_byte_array, sizeof(uint8_t), code_len, fp);
-	
-	cout << encoded_byte_array << endl;
-
-
-	lz77_decode(encoded_byte_array, code_len, Ls, Ll, text);
-
-	cout << "decoded text: " << endl;
-	cout << text << endl;
 
 	// get pat files
 }
