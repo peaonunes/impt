@@ -12,7 +12,7 @@ int main (int argc, char **argv) {
 	if (args.help_flag) {
 		print_help_text();
 
-	} else if (args.mode_flag==1) {
+	} else if (args.mode_flag==Index) {
 		if (args.text_file) {
 			create_index_file(args.text_file);
 
@@ -21,7 +21,7 @@ int main (int argc, char **argv) {
 			exit(1);
 
 		}
-	} else if (args.mode_flag==2) {
+	} else if (args.mode_flag==Search) {
 		if (args.pattern_file) {
 			read_pattern_file(args);
 

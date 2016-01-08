@@ -18,7 +18,8 @@
 using namespace std;
 
 program_args::program_args()
-  : mode_flag(0),
+  : mode_flag(),
+  	compression_flag(),
     pattern_file(0),
     help_flag(false),
     count_flag(false),
@@ -35,26 +36,27 @@ program_args get_program_parameters(int argc, char** argv) {
 	
   struct option long_options[] =
   {
-    {"pattern", required_argument, 0, 'p'},
-    {"help",    no_argument,       0, 'h'},
-    {"count",   no_argument,       0, 'c'},
+    {"pattern", 	required_argument, 0, 'p'},
+    {"help",    	no_argument,       0, 'h'},
+    {"count",   	no_argument,       0, 'c'},
+    {"compression", required_argument, 0, 'x'},
     {0, 0, 0, 0}
   };
 	
 	if (argc > 1) {
 		char* mode = argv[1];
 		if (strcmp(mode, "index") == 0) {
- 			args.mode_flag = 1;
+ 			args.mode_flag = Index;
 			optind++;
 		}
 		else if (strcmp(mode, "search") == 0) {
-      args.mode_flag = 2;
+      args.mode_flag = Search;
 			optind++;
 		}
 	}
 
   while (1) {
-    current_parameter = getopt_long(argc, argv, "p:hc", long_options, &option_index);
+    current_parameter = getopt_long(argc, argv, "p:hcx:", long_options, &option_index);
 
     if (current_parameter == -1) {
       break;
@@ -73,6 +75,10 @@ program_args get_program_parameters(int argc, char** argv) {
       case 'c':
       args.count_flag = true;
       break;
+      case 'x':
+      if (strcmp(optarg, "LZ77") == 0) args.compression_flag = LZ77;
+      else if (strcmp(optarg, "LZ78") == 0) args.compression_flag = LZ78;
+      break;
       case '?':
       // Um argumento desconhecido é apenas ignorado no momento
       break;
@@ -81,12 +87,12 @@ program_args get_program_parameters(int argc, char** argv) {
     }
   }
 	
-  if (args.mode_flag == 1) {
+  if (args.mode_flag == Index) {
     if (optind < argc) {
       
       args.text_file = argv[optind++];
     }
-  } else if (args.mode_flag == 2) {
+  } else if (args.mode_flag == Search) {
     if (optind < argc) {   
       if (!args.pattern_file) {
         args.patterns.push_back(argv[optind++]);
@@ -170,8 +176,8 @@ void search_index_file(program_args &args) {
 
 void create_index_file(char* source_file) {
 	FILE* fp = fopen(source_file, "r");
-	int size;
-	int code_len;
+	uint32_t size;
+	uint32_t code_len;
 	char *text;
 
 	/* index file name */
@@ -199,16 +205,16 @@ void create_index_file(char* source_file) {
 
 		/* ************ */
 		//encoded_byte_array = 
-		string code = lz78_encode(text, size, &code_len);
+		/*uint8_t* code = lz78_encode(text, size, &code_len);
 		cout << "code len: " << code_len << endl;
-		lz78_decode(code, code_len);
+		char* rec_text = lz78_decode(code, code_len, size);
 		//cout << "cod: " << encoded_byte_array << endl;
 		//lz78_decode(encoded_byte_array, code_len);
-		//cout << "textoo: " << x << endl;
-		free(encoded_byte_array);
+		cout << "texto: " << rec_text << endl;
+		free(encoded_byte_array);*/
 		/* ************ */
 
-		/*build_sarray_LRlcp(text, size, &sarray, &Llcp, &Rlcp);
+		build_sarray_LRlcp(text, size, &sarray, &Llcp, &Rlcp);
 
 		fp = fopen(index_name, "wb+");
 
@@ -216,9 +222,7 @@ void create_index_file(char* source_file) {
 			fwrite(&size, sizeof(uint32_t), 1, fp);
 
 			encoded_byte_array = lz77_encode(text, size, Ls, Ll, &code_len);
-
-			cout << "size: " << size << ", code_len: " << code_len << endl;
-
+				
 			fwrite(&code_len, sizeof(uint32_t), 1, fp);
 
 			fwrite(encoded_byte_array, sizeof(uint8_t), code_len, fp);
@@ -250,7 +254,7 @@ void create_index_file(char* source_file) {
 		} else {
 			printf("Erro ao abrir o arquivo %s\n", index_name);
 			exit(1);
-		}*/
+		}
 
 	} else {
 		printf("Erro ao abrir o arquivo %s\n", source_file);

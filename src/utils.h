@@ -3,11 +3,15 @@
 
 #include <vector>
 
+enum Mode { Index, Search };
+enum Compression { LZ77, LZ78 };
+
 struct program_args {
   program_args();
   ~program_args();
 
-  int mode_flag;
+  Mode mode_flag;
+  Compression compression_flag;
   char* pattern_file;
   std::vector<std::string> patterns;
   bool help_flag;
