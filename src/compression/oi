@@ -2,7 +2,6 @@
 #include <cstddef>
 #include <stdio.h>
 #include <string.h>
-#include <stdlib.h>
 
 #include "lz78.h"
 
@@ -70,9 +69,9 @@ d_node* d_node::insertEntry(char byte, int label){
 /* this first figures out how many bits it takes to write down max_label, and then writes label as a number using that many bits.  
   It stores in "buffer" things that haven't been written out yet.  
  */
-void printLabel (int label, int max_label, std::string &code, int &code_length) {
-  static unsigned char buffer = 0;
-  static int buffer_size = 0;
+void printLabel (int label, int max_label, uint8_t* &code, uint32_t &code_length) {
+  unsigned char buffer = 0;
+  int buffer_size = 0;
   int mask;
 
   if    (max_label == 0) return;
@@ -84,8 +83,9 @@ void printLabel (int label, int max_label, std::string &code, int &code_length) 
     
     if  (buffer_size == 8) {
       //std::cout.put(buffer);
-      code += buffer;
+      code[code_length] = buffer;
       code_length++;
+      std::cout << "label: " << buffer << std::endl;
       buffer = 0;
       buffer_size = 0;
     }
@@ -93,65 +93,62 @@ void printLabel (int label, int max_label, std::string &code, int &code_length) 
 }
 
 /* same as above */
-void printLetter (char c, std::string &code, int &code_length) {
+void printLetter (char c, uint8_t* &code, uint32_t &code_length) {
+  std::cout << "char ";
   printLabel((unsigned char) c, 128, code, code_length);
 }
 
 /* reads in labels written out using printLabel.
  */
-int readLabel (int max_label, std::string code, int code_length, int &index) {
-  static int buffer;
-  static int buffer_size = 0;
+int readLabel (int max_label, uint8_t* code, uint32_t code_length, int &i) {
+  uint8_t buffer;
+  int buffer_size = 0;
   int label;
-  
   //std::cout << "len=" << code_length << std::endl;
   for   (label=0; max_label != 0; max_label /= 2) {
     if  (buffer_size == 0) {
       //buffer = fgetc(stdin);
       //std::cout << "i=" << i << "\n";
-      if (index >= code_length) {
+      if (i >= code_length) {
         return -1;
       }
-      buffer = code[index++];;
-      //i++;
+      buffer = code[i];
+      i++;
       buffer_size = 8;
     }
     label = label * 2 +  ((buffer & 128) / 128);
     buffer *= 2;
     buffer_size--;
   }
-  //std::cout << "label: " << label << std::endl;
   return label;
+
 }
 
 /* use like cin.get(c). returns 1 normdicty, or 0 on end of file */
-int readLetter (char &c, std::string code, int code_length, int &index) {
-  int val = readLabel(128, code, code_length, index);
+int readLetter (char &c, uint8_t* code, uint32_t code_length, int &i) {
+  int val = readLabel(128, code, code_length, i);
   if (val == -1) return 0;
   c = (char) val;
   //std::cout << "char: " << c << std::endl;
   return 1;
 }
 
-std::string lz78_encode (char* text, int text_length, int* code_length){
-  int max_label = (1 << 25);
+uint8_t* lz78_encode (char* text, int text_length, uint32_t* code_length){
+  int max_label = (1 << 20);//25);
   int dictCount = 1;
-  
-  int temp_code_length = 0;
-  int index = 0;
-  char c;
-
-  std::string code = "";
-
   d_node * head = new d_node(NULL, 0, (d_node *)NULL);
   d_node *cur = head;
-  
-  while(index < text_length) {
-    c = text[index++];  
+  int i = 0;
+  char c;
+  uint8_t* code = (uint8_t*)malloc(3 * text_length * sizeof(uint8_t));
+  uint32_t index_length = 0;
+  while(i < text_length) {
+    c = text[i];
+    i++;
     d_node* dict_entry = cur->findEntry(c);
     if(dict_entry == NULL) {
-      printLabel(cur->label, max_label, code, temp_code_length);
-      printLetter(c, code, temp_code_length);
+      printLabel(cur->label, max_label, code, index_length);
+      printLetter(c, code, index_length);
       cur->insertEntry(c, dictCount);
       dictCount++;
       if(dictCount >= max_label) {
@@ -163,10 +160,9 @@ std::string lz78_encode (char* text, int text_length, int* code_length){
       cur = dict_entry;
     }
   }
-  printLabel(cur->label, max_label, code, temp_code_length);
-  printLabel(0, 127, code, temp_code_length);
-
-  (*code_length) = temp_code_length;
+  printLabel(cur->label, max_label, code, index_length);
+  printLabel(0, 127, code, index_length);
+  (*code_length) = index_length;
   return code;
 }
 
@@ -174,15 +170,16 @@ d_node** dict;
 
 std::string decodePath(d_node *last_node, std::string &text, bool error = false, bool newLine = false) {
   std::string str = "";
-  while(last_node != NULL && last_node->parent != NULL) {
-    str = last_node->byte + str;
-    last_node = last_node->parent;
+  if(error) {
+    std::cerr << str;
+  } else {
+    while(last_node != NULL && last_node->parent != NULL) {
+      str = last_node->byte + str;
+      last_node = last_node->parent;
+    }
+    //std::cout << str;
+    text.append(str);
   }
-  //std::cout << str;
-  //text.append(str);
-  if (error) std::cerr << str;
-  //std::cout << str;
-  text += str;
   if(newLine) std::cerr << "\n";
   return str;
 }
@@ -199,28 +196,23 @@ void expandArray(long size) {
   }
 }
 
-std::string lz78_decode (std::string code, int code_length) {
-  int max_label = (1 << 25);
+std::string lz78_decode (uint8_t* code, uint32_t code_length) {
+  std::cout << "decoded chars: ";
+  int max_label = (1 << 20);//25);
   int dictCount = 1;
-  
   d_node* head = new d_node(NULL, 0, (d_node *)NULL);
   d_node* cur = head;
-
+  std::string text = "";
   long size = 256;
   dict = new d_node*[size];
   dict[0] = head;
-  
-  std::string text = "";
-  int index = 0;
-
   int nextLabel;
   char c = NULL;
   char nextC = NULL;
-  
-  int label = readLabel(max_label, code, code_length, index);
-  readLetter(c, code, code_length, index);
-  
-  while( (nextLabel = readLabel(max_label, code, code_length, index)) != -1 && readLetter(nextC, code, code_length, index) != -1 ) {
+  int i = 0;
+  int label = readLabel(max_label, code, code_length, i);
+  readLetter(c, code, code_length, i);
+  while( (nextLabel = readLabel(max_label, code, code_length, i)) != -1 && readLetter(nextC, code, code_length, i) != -1 ) {
     if(label < size && dict[label] != NULL) {
       d_node* newNode;
       d_node* cur = dict[label];
@@ -249,7 +241,7 @@ std::string lz78_decode (std::string code, int code_length) {
     std::cout << decodePath(newNode, text);
     dictCount++;
   }
+  std::cout << "\n****************************************************\n";
 
-  std::cout << std::endl;
   return text;
 }

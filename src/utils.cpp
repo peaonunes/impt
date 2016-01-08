@@ -138,14 +138,40 @@ void read_pattern_file(program_args &args) {
 }
 
 void search_index_file(program_args &args) {
-  // cout << "Searching index file" << endl;
+	// cout << "Searching index file" << endl;
 	
+	// decompress
+	FILE* fp = fopen(args.index_file, "r");
+	uint32_t size;
+	uint32_t code_len;
+	char* text;
+	uint8_t* encoded_byte_array;
+	int Ls = (1 << 12) - 1;
+	int Ll = (1 << 4) - 1;
+
+	fread(&size, sizeof(uint32_t), 1, fp);
+	fread(&code_len, sizeof(uint32_t), 1, fp);
+
+	cout << "size: " << size << ", code_len: " << code_len << endl;
+
+	encoded_byte_array = (uint8_t*)malloc((code_len + 1)*sizeof(uint8_t));
+	fread(encoded_byte_array, sizeof(uint8_t), code_len, fp);
+	
+	cout << encoded_byte_array << endl;
+
+
+	lz77_decode(encoded_byte_array, code_len, Ls, Ll, text);
+
+	cout << "decoded text: " << endl;
+	cout << text << endl;
+
+	// get pat files
 }
 
 void create_index_file(char* source_file) {
 	FILE* fp = fopen(source_file, "r");
-	uint32_t size;
-	uint32_t code_len;
+	int size;
+	int code_len;
 	char *text;
 
 	/* index file name */
@@ -153,7 +179,7 @@ void create_index_file(char* source_file) {
 	char *index_name = new char[strlen(source_file) - source_name_length + 5];
 	memcpy(index_name, &source_file[source_name_length], strlen(source_file) - source_name_length);
 	strcat(index_name, ".idx");
-	
+
 	int* sarray;
 	int* Llcp;
 	int* Rlcp;
@@ -171,7 +197,18 @@ void create_index_file(char* source_file) {
 		text[size] = 0;
 		fclose(fp);
 
-		build_sarray_LRlcp(text, size, &sarray, &Llcp, &Rlcp);
+		/* ************ */
+		//encoded_byte_array = 
+		string code = lz78_encode(text, size, &code_len);
+		cout << "code len: " << code_len << endl;
+		lz78_decode(code, code_len);
+		//cout << "cod: " << encoded_byte_array << endl;
+		//lz78_decode(encoded_byte_array, code_len);
+		//cout << "textoo: " << x << endl;
+		free(encoded_byte_array);
+		/* ************ */
+
+		/*build_sarray_LRlcp(text, size, &sarray, &Llcp, &Rlcp);
 
 		fp = fopen(index_name, "wb+");
 
@@ -179,8 +216,14 @@ void create_index_file(char* source_file) {
 			fwrite(&size, sizeof(uint32_t), 1, fp);
 
 			encoded_byte_array = lz77_encode(text, size, Ls, Ll, &code_len);
+
+			cout << "size: " << size << ", code_len: " << code_len << endl;
+
+			fwrite(&code_len, sizeof(uint32_t), 1, fp);
+
 			fwrite(encoded_byte_array, sizeof(uint8_t), code_len, fp);
 			free(encoded_byte_array);
+
 
 			byte_array = get_bytes_from_array(sarray, size);
 			free(sarray);
@@ -207,7 +250,8 @@ void create_index_file(char* source_file) {
 		} else {
 			printf("Erro ao abrir o arquivo %s\n", index_name);
 			exit(1);
-		}
+		}*/
+
 	} else {
 		printf("Erro ao abrir o arquivo %s\n", source_file);
 		exit(1);
