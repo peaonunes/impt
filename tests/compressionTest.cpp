@@ -38,7 +38,7 @@ void calculateMeanTimeAndCompression(vector<float> timestamps,vector<float> taxC
 		printf("\n######### GZIP #########\n");
 
 	for (int i = 0 ; i < EXECUTIONS; i++){
-		string s1 = to_string((i+1));
+		string s1 = to_string(i);
 		strcat (executions,s1.c_str());
 		strcat (executions,"       |");
 
@@ -188,7 +188,7 @@ void runSuite(vector<char*> files){
 
 	printf("\n######################################################");
 	printf("\n################# BATERIA DE TESTES ##################");
-	printf("\n######################################################\n");
+	printf("\n############# COMPRESSAO E DESCOMPRESSAO #############\n");
 	printf("\nLegenda:\nLinha 1: ID da Execução");
 	printf("\nLinha 2: Tempo de Compressão (segundos)");
 	printf("\nLinha 3: Taxa de Compressão (tamanho final com relação ao original)");
@@ -197,7 +197,7 @@ void runSuite(vector<char*> files){
 
 	for (int i = 0; i < files.size(); i++){
 
-		FILE *fp = fopen(files.at(0), "r");
+		FILE *fp = fopen(files.at(i), "r");
 	
 		fseek(fp, 0, SEEK_END);
 		int txtlen = (int)ftell(fp);
@@ -209,7 +209,7 @@ void runSuite(vector<char*> files){
 		txt[txtlen] = 0;
 
 		printf("\n######################################################");
-		printf("\n#################### FILE ID: %d ######################", (i+1));
+		printf("\n################ ARQUIVO ID: %d ######################", (i+1));
 		printf("\n######################################################\n");
 		printf("Inicializando os testes para o arquivo: %s.\nArquivo de tamanho: %d\n", files.at(i),txtlen);
 		
@@ -224,12 +224,19 @@ void runSuite(vector<char*> files){
 }
 
 int main() {
+	// RUN WITH
+	// clear && g++ -O3 ../src/compression/lz77.cpp compressionTest.cpp -o compressionTests && time ./compressionTests > REPORT200.TXT
 	//SET HERE THE FILES YOU WANT TO COMPRESS
 	vector<char*> files;
 	//files.push_back("../data/english.1MB");
 	//files.push_back("../data/english.2MB");
 	//files.push_back("../data/english.5MB");
 	//files.push_back("../data/english.10MB");
+	//files.push_back("../data/english.25MB");
+	//files.push_back("../data/english.50MB");
+	//files.push_back("../data/english.100MB");
+	files.push_back("../data/english.200MB");
+
 
 	runSuite(files);
 }
