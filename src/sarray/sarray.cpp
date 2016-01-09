@@ -62,7 +62,8 @@ sarray_temp* sort_letter_occurrences(sarray_temp* stemp, int len) {
 	return new_stemp;
 }
 
-int* build_sarray(char* text, int text_length, sarray_temp** P, int explimit) {
+// Construindo o sarray
+int* build_sarray(char* text, int text_length, int explimit) {
 	int array_size = text_length * sizeof(int);
 	int aux = 0;
 	int group_size = 1;
@@ -86,19 +87,13 @@ int* build_sarray(char* text, int text_length, sarray_temp** P, int explimit) {
 	}
 
 	for (int k = 0; k < explimit; ++k) {
-		P[k] = (sarray_temp*)malloc(stemp_arraysize);
-
 		for (int i = 0; i < text_length; ++i) {
-			P[k][i].first_block_order = final_sarray[i];
 			stemp[i].first_block_order = final_sarray[i];
-			P[k][i].start_index = i;
 			stemp[i].start_index = i;
 
 			if (i + group_size < text_length) {
-				P[k][i].second_block_order = final_sarray[i + group_size];
 				stemp[i].second_block_order = final_sarray[i + group_size];
 			} else {
-				P[k][i].second_block_order = -1;
 				stemp[i].second_block_order = -1;
 			}
 		}
@@ -129,40 +124,29 @@ int* build_sarray(char* text, int text_length, sarray_temp** P, int explimit) {
 	return final_sarray;
 }
 
-int compute_LRlcp(sarray_temp** P, int i, int j, int text_length, int explimit) {
+int lcp(char* text1, char* text2) {
 	int lcp = 0;
-	int k = explimit - 1;
-	int aux;
 
-	if (i == j) {
-		return text_length - i;
-	}
-
-	while (k >= 0 && i < text_length && j < text_length) {
-		if (P[k][i].first_block_order == P[k][j].first_block_order) {
-			aux = 1 << k;
-			lcp += aux;
-			i += aux;
-			j += aux;
-		}
-
-		--k;
+	while(text1[lcp] != '\0'
+			&& text2[lcp] != '\0'
+			&& text1[lcp] == text2[lcp]) {
+		++lcp;
 	}
 
 	return lcp;
 }
 
-void build_LRlcp(int* Llcp, int* Rlcp, int* sarray, sarray_temp** P, int explimit, int text_length, int left, int right) {
+void build_LRlcp(int* Llcp, int* Rlcp, int* sarray, char* text, int left, int right) {
 	int middle;
 
 	if (right - left > 1) {
 		middle = (left + right) / 2;
 
-		Llcp[middle] = compute_LRlcp(P, sarray[left], sarray[middle], text_length, explimit);
-		Rlcp[middle] = compute_LRlcp(P, sarray[middle], sarray[right], text_length, explimit);
+		Llcp[middle] = lcp(&text[sarray[left]], &text[sarray[middle]]);
+		Llcp[middle] = lcp(&text[sarray[middle]], &text[sarray[right]]);
 
-		build_LRlcp(Llcp, Rlcp, sarray, P, explimit, text_length, left, middle);
-		build_LRlcp(Llcp, Rlcp, sarray, P, explimit, text_length, middle, right);
+		build_LRlcp(Llcp, Rlcp, sarray, text, left, middle);
+		build_LRlcp(Llcp, Rlcp, sarray, text, middle, right);
 	}
 }
 
@@ -177,30 +161,9 @@ void build_sarray_LRlcp(char* text, int text_length, int** sarray, int** Llcp, i
 	(*Rlcp) = (int*)malloc(array_size);
 	memset(*Rlcp, -1, array_size);
 
-	// estrutura auxiliar que guarda todos os p^k intermediários
-	// para a construção dos L/Rlcp
-	sarray_temp** P = (sarray_temp**)malloc(explimit * sizeof(sarray_temp*));
+	(*sarray) = build_sarray(text, text_length, explimit);
 
-	(*sarray) = build_sarray(text, text_length, P, explimit);
-
-	build_LRlcp(*Llcp, *Rlcp, *sarray, P, explimit, text_length, 0, text_length - 1);
-
-	for (int i = 0; i < explimit; i++) {
-		free(P[i]);
-	}
-	free(P);
-}
-
-int lcp(char* text1, char* text2) {
-	int lcp = 0;
-
-	while(text1[lcp] != '\0'
-			&& text2[lcp] != '\0'
-			&& text1[lcp] == text2[lcp]) {
-		++lcp;
-	}
-
-	return lcp;
+	build_LRlcp(*Llcp, *Rlcp, *sarray, text, 0, text_length - 1);
 }
 
 int predecessor(char* text, int txtlen, char* pattern, int patlen, int* sarray, int* Llcp, int* Rlcp) {
