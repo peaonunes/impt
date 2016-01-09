@@ -143,7 +143,7 @@ void build_LRlcp(int* Llcp, int* Rlcp, int* sarray, char* text, int left, int ri
 		middle = (left + right) / 2;
 
 		Llcp[middle] = lcp(&text[sarray[left]], &text[sarray[middle]]);
-		Llcp[middle] = lcp(&text[sarray[middle]], &text[sarray[right]]);
+		Rlcp[middle] = lcp(&text[sarray[middle]], &text[sarray[right]]);
 
 		build_LRlcp(Llcp, Rlcp, sarray, text, left, middle);
 		build_LRlcp(Llcp, Rlcp, sarray, text, middle, right);
