@@ -375,3 +375,24 @@ char* get_bytes_from_array(int* array, uint32_t arraylen) {
 
 	return result;
 }
+
+int* get_int_array_from_bytes(char* byte_array, uint32_t arraylen) {
+	uint32_t result_size = arraylen * sizeof(int);
+	int* result = (int*)malloc(result_size);
+	int aux;
+
+	uint32_t result_index = 0;
+	uint32_t bytearray_index = 0;
+
+	while (result_index < result_size) {
+		aux = 0 | byte_array[bytearray_index] << 24
+			| byte_array[bytearray_index + 1] << 16
+			| byte_array[bytearray_index + 2] << 8
+			| byte_array[bytearray_index + 3];
+
+		result[result_index++] = aux;
+		bytearray_index += 4;
+	}
+
+	return result;
+}
