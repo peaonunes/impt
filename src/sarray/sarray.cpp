@@ -2,6 +2,7 @@
 #include <cstdlib>
 #include <cmath>
 #include <cstring>
+#include <algorithm>
 
 #include "sarray.h"
 
@@ -10,6 +11,19 @@ typedef struct sarray_temp {
 	int second_block_order;
 	int start_index;
 } sarray_temp;
+
+bool operator <(const sarray_temp &lh, const sarray_temp &rh) {
+	if (lh.first_block_order == rh.first_block_order) {
+		if (lh.second_block_order == rh.second_block_order) {
+			if (lh.start_index == rh.start_index) {
+				return false;
+			}
+			return lh.start_index < rh.start_index;
+		}
+		return lh.second_block_order < rh.second_block_order;
+	}
+	return lh.first_block_order < rh.first_block_order;
+}
 
 // Aqui, first_block_order é usado pra guardar a letra apenas,
 // de modo a reusar a struct sarray_temp.
@@ -46,56 +60,6 @@ sarray_temp* sort_letter_occurrences(sarray_temp* stemp, int len) {
 	free(stemp);
 
 	return new_stemp;
-}
-
-// Construindo o sarray
-
-int cmp(sarray_temp* stemp, int index1, int index2) {
-	if (stemp[index1].first_block_order == stemp[index2].first_block_order) {
-		if (stemp[index1].second_block_order == stemp[index2].second_block_order) {
-			return stemp[index1].start_index - stemp[index2].start_index;
-		}
-		return stemp[index1].second_block_order - stemp[index2].second_block_order;
-	}
-	return stemp[index1].first_block_order - stemp[index2].first_block_order;
-}
-
-void heapify_temp_sarray(int index, int length, sarray_temp* stemp) {
-	int childIndex = (index * 2) + 1;
-	sarray_temp swap_aux;
-
-	while (childIndex < length) {
-		if ((length - childIndex > 1)
-				&& cmp(stemp, childIndex, childIndex + 1) < 0) {
-			++childIndex;
-		}
-
-		if (cmp(stemp, index, childIndex) > 0) break;
-
-		swap_aux = stemp[index];
-		stemp[index] = stemp[childIndex];
-		stemp[childIndex] = swap_aux;
-
-		index = childIndex;
-		childIndex = (index * 2) + 1;
-	}
-}
-
-void heapsort_temp_sarray(sarray_temp* stemp, int length) {
-	int i;
-	sarray_temp swap_aux;
-
-	for (i = (length - 1) / 2; i >= 0; --i) {
-		heapify_temp_sarray(i, length, stemp);
-	}
-
-	for (i = length - 1; i >= 1; --i) {
-		swap_aux = stemp[i];
-		stemp[i] = stemp[0];
-		stemp[0] = swap_aux;
-
-		heapify_temp_sarray(0, i, stemp);
-	}
 }
 
 int* build_sarray(char* text, int text_length, sarray_temp** P, int explimit) {
@@ -139,7 +103,7 @@ int* build_sarray(char* text, int text_length, sarray_temp** P, int explimit) {
 			}
 		}
 
-		heapsort_temp_sarray(stemp, text_length);
+		std::sort(stemp, stemp + text_length);
 
 		aux = 0;
 
@@ -401,10 +365,10 @@ char* get_bytes_from_array(int* array, uint32_t arraylen) {
 	uint32_t array_index = 0;
 
 	while(array_index < arraylen) {
-		result[result_index++] = array[array_index] & 0xf000;
-		result[result_index++] = array[array_index] & 0x0f00;
-		result[result_index++] = array[array_index] & 0x00f0;
-		result[result_index++] = array[array_index] & 0x000f;
+		result[result_index++] = (array[array_index] & 0xff000000) >> 24;
+		result[result_index++] = (array[array_index] & 0x00ff0000) >> 16;
+		result[result_index++] = (array[array_index] & 0x0000ff00) >> 8;
+		result[result_index++] = array[array_index] & 0x000000ff;
 
 		++array_index;
 	}
