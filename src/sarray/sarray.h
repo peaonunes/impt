@@ -21,5 +21,5 @@ void find_occurrences(int* matches_start, int* matches_end, char* text, int txtl
 // Função utilizada para transformar os arrays em arrays de bytes
 // para compressão e serialização
 char* get_bytes_from_array(int* array, uint32_t arraylen);
-
+int* get_int_array_from_bytes(char* byte_array, uint32_t arraylen);
 #endif

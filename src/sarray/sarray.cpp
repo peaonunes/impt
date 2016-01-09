@@ -322,21 +322,23 @@ void find_occurrences(int* matches_start, int* matches_end, char* text, int txtl
 
 // A ser usado para a compressão
 char* get_bytes_from_array(int* array, uint32_t arraylen) {
-	uint32_t result_size = arraylen * sizeof(int);
-	char *result = (char*)malloc(result_size);
-	uint32_t result_index = 0;
-	uint32_t array_index = 0;
-
-	while(array_index < arraylen) {
-		result[result_index++] = (array[array_index] & 0xff000000) >> 24;
-		result[result_index++] = (array[array_index] & 0x00ff0000) >> 16;
-		result[result_index++] = (array[array_index] & 0x0000ff00) >> 8;
-		result[result_index++] = array[array_index] & 0x000000ff;
-
-		++array_index;
-	}
-
-	return result;
+    uint32_t result_size = arraylen * sizeof(int);
+    char *result = (char*)malloc(result_size + 1);
+    uint32_t result_index = 0;
+    uint32_t array_index = 0;
+ 
+    while(array_index < arraylen) {
+        result[result_index++] = (array[array_index] & 0xff000000) >> 24;
+        result[result_index++] = (array[array_index] & 0x00ff0000) >> 16;
+        result[result_index++] = (array[array_index] & 0x0000ff00) >> 8;
+        result[result_index++] = array[array_index] & 0x000000ff;
+ 
+        ++array_index;
+    }
+ 
+    result[result_index] = 0;
+ 
+    return result;
 }
 
 int* get_int_array_from_bytes(char* byte_array, uint32_t arraylen) {

@@ -19,7 +19,7 @@ using namespace std;
 
 program_args::program_args()
   : mode_flag(),
-  	compression_flag(),
+  	compression_flag(LZ78),
     pattern_file(0),
     help_flag(false),
     count_flag(false),
@@ -78,6 +78,7 @@ program_args get_program_parameters(int argc, char** argv) {
       case 'x':
       if (strcmp(optarg, "LZ77") == 0) args.compression_flag = LZ77;
       else if (strcmp(optarg, "LZ78") == 0) args.compression_flag = LZ78;
+      else { cerr << "Algoritmo de compressão inválido.\n"; exit(1); }
       break;
       case '?':
       // Um argumento desconhecido é apenas ignorado no momento
@@ -144,7 +145,6 @@ void read_pattern_file(program_args &args) {
 }
 
 void search_index_file(program_args &args) {
-	// cout << "Searching index file" << endl;
 	
 	// decompress
 	FILE* fp = fopen(args.index_file, "r");
@@ -154,21 +154,58 @@ void search_index_file(program_args &args) {
 	uint8_t* encoded_byte_array;
 	int Ls = (1 << 12) - 1;
 	int Ll = (1 << 4) - 1;
+	int* sarray;
+	int* Llcp;
+	int* Rlcp;
+	char* byte_array;
+	Compression compression_mode;
 
+	fread(&compression_mode, sizeof(int), 1, fp);
+	fread(&size, sizeof(uint32_t), 1, fp);
+	fread(&code_len, sizeof(uint32_t), 1, fp);
 
-	// get pat files
+	// Text
+	encoded_byte_array = (uint8_t*)malloc(code_len * sizeof(uint8_t));
+	fread(encoded_byte_array, sizeof(uint8_t), code_len, fp);
+	if (compression_mode == LZ77) {
+		text = (char*)malloc(size * sizeof(char));
+		lz77_decode(encoded_byte_array, code_len, Ls, Ll, text);
+	} else if (compression_mode == LZ78) {
+		text = lz78_decode(encoded_byte_array, code_len, size);
+	}
+	free(encoded_byte_array);
+
+	// Suffix array
+	/*
+	fread(&code_len, sizeof(uint32_t), 1, fp);
+	encoded_byte_array = (uint8_t*)malloc(code_len * sizeof(uint8_t));
+	fread(encoded_byte_array, sizeof(uint8_t), code_len, fp);
+	byte_array = (char*)malloc((size * 4 * sizeof(char)) + 1);
+	lz77_decode(encoded_byte_array, code_len, Ls, Ll, byte_array);
+	free(encoded_byte_array);
+	sarray = get_int_array_from_bytes(byte_array, size);
+	free(byte_array);
+
+	cout << "suffix array decompressed" << endl;
+	*/	
+	// Llcp
+
+	// Rlcp
+
+	// Loop through patterns and search
+
 }
 
-void create_index_file(char* source_file) {
-	FILE* fp = fopen(source_file, "r");
+void create_index_file(program_args &args) {
+	FILE* fp = fopen(args.text_file, "r");
 	uint32_t size;
 	uint32_t code_len;
 	char *text;
 
 	/* index file name */
-	int source_name_length = (strrchr(source_file, '/')-source_file+1);
-	char *index_name = new char[strlen(source_file) - source_name_length + 5];
-	memcpy(index_name, &source_file[source_name_length], strlen(source_file) - source_name_length);
+	int source_name_length = (strrchr(args.text_file, '/')-args.text_file+1);
+	char *index_name = new char[strlen(args.text_file) - source_name_length + 5];
+	memcpy(index_name, &args.text_file[source_name_length], strlen(args.text_file) - source_name_length);
 	strcat(index_name, ".idx");
 
 	int* sarray;
@@ -204,34 +241,50 @@ void create_index_file(char* source_file) {
 		fp = fopen(index_name, "wb+");
 
 		if (fp) {
+
+			fwrite(&args.compression_flag, sizeof(int), 1, fp);
+
+			if (args.compression_flag == LZ77)
+				encoded_byte_array = lz77_encode(text, size, Ls, Ll, &code_len);
+			else if (args.compression_flag == LZ78)
+				encoded_byte_array = lz78_encode(text, size, &code_len);
+			
 			fwrite(&size, sizeof(uint32_t), 1, fp);
-
-			encoded_byte_array = lz77_encode(text, size, Ls, Ll, &code_len);
-				
 			fwrite(&code_len, sizeof(uint32_t), 1, fp);
-
 			fwrite(encoded_byte_array, sizeof(uint8_t), code_len, fp);
 			free(encoded_byte_array);
 
 
 			byte_array = get_bytes_from_array(sarray, size);
 			free(sarray);
-			encoded_byte_array = lz77_encode(byte_array, size * 4, Ls, Ll, &code_len);
+			if (args.compression_flag == LZ77)
+				encoded_byte_array = lz77_encode(byte_array, size * 4, Ls, Ll, &code_len);
+			else if (args.compression_flag == LZ78)
+				encoded_byte_array = lz78_encode(byte_array, size * 4, &code_len);
 			free(byte_array);
+			fwrite(&code_len, sizeof(uint32_t), 1, fp);
 			fwrite(encoded_byte_array, sizeof(uint8_t), code_len, fp);
 			free(encoded_byte_array);
 
 			byte_array = get_bytes_from_array(Llcp, size);
 			free(Llcp);
-			encoded_byte_array = lz77_encode(byte_array, size * 4, Ls, Ll, &code_len);
+			if (args.compression_flag == LZ77)
+				encoded_byte_array = lz77_encode(byte_array, size * 4, Ls, Ll, &code_len);
+			else if (args.compression_flag == LZ78)
+				encoded_byte_array = lz78_encode(byte_array, size * 4, &code_len);
 			free(byte_array);
+			fwrite(&code_len, sizeof(uint32_t), 1, fp);
 			fwrite(encoded_byte_array, sizeof(uint8_t), code_len, fp);
 			free(encoded_byte_array);
 
 			byte_array = get_bytes_from_array(Rlcp, size);
 			free(Rlcp);
-			encoded_byte_array = lz77_encode(byte_array, size * 4, Ls, Ll, &code_len);
+			if (args.compression_flag == LZ77)
+				encoded_byte_array = lz77_encode(byte_array, size * 4, Ls, Ll, &code_len);
+			else if (args.compression_flag == LZ78)
+				encoded_byte_array = lz78_encode(byte_array, size * 4, &code_len);
 			free(byte_array);
+			fwrite(&code_len, sizeof(uint32_t), 1, fp);
 			fwrite(encoded_byte_array, sizeof(uint8_t), code_len, fp);
 			free(encoded_byte_array);
 			
@@ -242,7 +295,7 @@ void create_index_file(char* source_file) {
 		}
 
 	} else {
-		printf("Erro ao abrir o arquivo %s\n", source_file);
+		printf("Erro ao abrir o arquivo %s\n", args.text_file);
 		exit(1);
 	}
 }

@@ -14,7 +14,7 @@ int main (int argc, char **argv) {
 
 	} else if (args.mode_flag==Index) {
 		if (args.text_file) {
-			create_index_file(args.text_file);
+			create_index_file(args);
 
 		} else {
 			cerr << "Nenhum arquivo de texto foi fornecido." << endl;
