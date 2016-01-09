@@ -12,30 +12,46 @@
 #include <string.h>
 
 #include "../src/compression/lz77.h"
+#include "../src/compression/lz78.h"
 
 using namespace std;
 using namespace std::chrono;
 
+// ############################################################################################
+// ##
+// ## Para executar testes de compressão e descompressão:
+// ##	1. Vá ao main() e adicione no vetor o path dos arquivos que devem ser comprimidos.
+// ##	2. Escolha a quantidade de execuções mudando a const int EXECUTIONS.
+// ##   3. Complie e execute com:
+// ##
+// ##	g++ -O3 ../src/compression/lz77.cpp ../src/compression/lz78.cpp compressionTests.cpp -o compressionTests && ./compressionTests > CompressionTestReport.txt
+// ##
+// ##   4. Observe o relatório de saída: CompressionTestReport.txt
+// ##
+// ## Ps: Considere remover as linhas 83 a 87, quando um número grande de execuções, pois estas
+// ## imprimem os valores de saída para cada execução, em forma de "tabela".
+// ############################################################################################
 
-// SET HERE DE NUMBER OF EXECUTIONS FOR EACH FILE
 const int EXECUTIONS = 10;
 const int MICROSECONDS = 1000000;
 
-void calculateMeanTimeAndCompression(vector<float> timestamps,vector<float> taxCompressions,vector<float> decompressionTime,vector<int> decompressionError,bool type){
+void calculateMeanTimeAndCompression(vector<float> timestamps,vector<float> taxCompressions,vector<float> decompressionTime,vector<int> decompressionError,int type){
 	float meanTime = 0;
 	float meanTaxCompression = 0;
 	float meanDecompressionTime = 0;
 	float meanError = 0;
-	char executions[100];strcpy (executions, "");
-	char timeValues[100];strcpy (timeValues, "");
-	char taxValues[100];strcpy (taxValues, "");
-	char decompressValue[100];strcpy (decompressValue, "");
-	char error[100];strcpy (error, "");
+	char executions[150];strcpy (executions, "");
+	char timeValues[150];strcpy (timeValues, "");
+	char taxValues[150];strcpy (taxValues, "");
+	char decompressValue[150];strcpy (decompressValue, "");
+	char error[150];strcpy (error, "");
 
-	if (type)
-		printf("\n######### IPMT #########\n");
+	if (type == 0)
+		printf("\n######### IPMT lz77 #########\n");
+	else if (type == 1)
+		printf("\n######### IPMT lz78 #########\n");	
 	else
-		printf("\n######### GZIP #########\n");
+		printf("\n############ GZIP ###########\n");
 
 	for (int i = 0 ; i < EXECUTIONS; i++){
 		string s1 = to_string(i);
@@ -87,7 +103,7 @@ int getFileSize(char* filename)
 }
 
 char* buildDeCompressCmd(char gzipFileName[], char fileName[], int i){
-	char cmd[100];strcpy(cmd,"gzip -cd ");
+	char cmd[150];strcpy(cmd,"gzip -cd ");
 	strcat(cmd,gzipFileName);
 	strcat(cmd," > ");
 	strcat(cmd,fileName);
@@ -96,7 +112,7 @@ char* buildDeCompressCmd(char gzipFileName[], char fileName[], int i){
 }
 
 char* buildCompressCmd(char* filename, char gzipFileName[]){
-	char cmd[50];strcpy(cmd,"gzip -c ");
+	char cmd[150];strcpy(cmd,"gzip -c ");
 	strcat(cmd,filename);
 	strcat(cmd," > ");
 	strcat(cmd,gzipFileName);
@@ -109,11 +125,17 @@ void runTest(char* txt, int txtlen, char cmd[], char fileName[], char gzipFileNa
 	int lookahead_length = (1 << 4) - 1;
 	
 	uint32_t codelen = 0;
+	uint32_t codelen2 = 0;
 
 	vector<float> timestamps;
 	vector<float> taxCompressions;
 	vector<float> decompressionTime;
 	vector<int> decompressionError;
+
+	vector<float> timestamps78;
+	vector<float> taxCompressions78;
+	vector<float> decompressionTime78;
+	vector<int> decompressionError78;
 
 	vector<float> timestampsGZIP;
 	vector<float> taxCompressionsGZIP;
@@ -124,7 +146,9 @@ void runTest(char* txt, int txtlen, char cmd[], char fileName[], char gzipFileNa
 	high_resolution_clock::time_point t2;
 
 	uint8_t* encoded_text;
+	uint8_t* encoded_text78;
 	char* decoded_text = (char*)malloc((txtlen+1)*sizeof(char));
+	char* decoded_text78 = (char*)malloc((txtlen+1)*sizeof(char));
 
 	float duration = 0;
 	float seconds = 0;
@@ -132,7 +156,7 @@ void runTest(char* txt, int txtlen, char cmd[], char fileName[], char gzipFileNa
 	
 	for (int i = 0; i < EXECUTIONS; i++){
 		// ################################## COMPRESSION ########################################
-		// ################################## CALL IPMT ##########################################
+		// ################################## CALL lz77 ##########################################
 		t1 = high_resolution_clock::now();
 		encoded_text = lz77_encode(txt, txtlen, search_window_length, lookahead_length, &codelen);	
 	    t2 = high_resolution_clock::now();
@@ -143,7 +167,19 @@ void runTest(char* txt, int txtlen, char cmd[], char fileName[], char gzipFileNa
 		
 		timestamps.push_back(seconds);
 		taxCompressions.push_back(c);
+
+		//################################## CALL lz78 ##########################################
+		t1 = high_resolution_clock::now();
+		encoded_text78 = lz78_encode (txt, txtlen, &codelen2);
+	    t2 = high_resolution_clock::now();
+
+    	duration = duration_cast<microseconds>( t2 - t1 ).count();
+		seconds = duration/MICROSECONDS;
+		c = (float)codelen2/(float)txtlen;
 		
+		timestamps78.push_back(seconds);
+		taxCompressions78.push_back(c);
+
 		// ################################## CALL GZIP ##########################################
 		t1 = high_resolution_clock::now();
 		system (cmd);
@@ -156,8 +192,8 @@ void runTest(char* txt, int txtlen, char cmd[], char fileName[], char gzipFileNa
 		timestampsGZIP.push_back(seconds);
 		taxCompressionsGZIP.push_back(c);
 
-		//################################## DECOMPRESSION ##########################################
-		//################################## CALL IPMT ##########################################
+		//################################## DECOMPRESSION ########################################
+		//################################## CALL lz77 ###########################################
 		t1 = high_resolution_clock::now();
 		lz77_decode(encoded_text, codelen, search_window_length, lookahead_length, decoded_text);
 	    t2 = high_resolution_clock::now();
@@ -168,6 +204,18 @@ void runTest(char* txt, int txtlen, char cmd[], char fileName[], char gzipFileNa
 		decompressionTime.push_back(seconds);
 	    decompressionError.push_back(strcmp(txt,decoded_text));
 
+	    //################################## CALL lz78 ##########################################
+	    
+	    t1 = high_resolution_clock::now();
+		decoded_text78 = lz78_decode (encoded_text78, codelen2, txtlen);	
+	    t2 = high_resolution_clock::now();
+
+	    duration = duration_cast<microseconds>( t2 - t1 ).count();
+		seconds = duration/MICROSECONDS;
+
+		decompressionTime78.push_back(seconds);
+	    decompressionError78.push_back(strcmp(txt,decoded_text78));
+		
 	    // ################################## CALL GZIP ##########################################
 	    char* cmd2 = buildDeCompressCmd(gzipFileName,fileName,i);
 	    t1 = high_resolution_clock::now();
@@ -180,8 +228,9 @@ void runTest(char* txt, int txtlen, char cmd[], char fileName[], char gzipFileNa
 		decompressionErrorGZIP.push_back(0);
 	}
 
-	calculateMeanTimeAndCompression(timestamps,taxCompressions,decompressionTime,decompressionError,true);
-	calculateMeanTimeAndCompression(timestampsGZIP,taxCompressionsGZIP,decompressionTimeGZIP,decompressionErrorGZIP,false);
+	calculateMeanTimeAndCompression(timestamps,taxCompressions,decompressionTime,decompressionError,0);
+	calculateMeanTimeAndCompression(timestamps78,taxCompressions78,decompressionTime78,decompressionError78,1);
+	calculateMeanTimeAndCompression(timestampsGZIP,taxCompressionsGZIP,decompressionTimeGZIP,decompressionErrorGZIP,2);
 }
 
 void runSuite(vector<char*> files){
@@ -209,24 +258,20 @@ void runSuite(vector<char*> files){
 		txt[txtlen] = 0;
 
 		printf("\n######################################################");
-		printf("\n################ ARQUIVO ID: %d ######################", (i+1));
+		printf("\n################## ARQUIVO ID: %d #####################", (i+1));
 		printf("\n######################################################\n");
 		printf("Inicializando os testes para o arquivo: %s.\nArquivo de tamanho: %d\n", files.at(i),txtlen);
 		
-		char gzipFileName[100];strcpy(gzipFileName,files.at(i));
+		char gzipFileName[150];strcpy(gzipFileName,files.at(i));
 		strcat(gzipFileName,".gz");
 
 		char* cmd = buildCompressCmd(files.at(i),gzipFileName);
 		
 		runTest(txt, txtlen, cmd, files.at(i), gzipFileName);
 	}
-
 }
 
 int main() {
-	// RUN WITH
-	// clear && g++ -O3 ../src/compression/lz77.cpp compressionTest.cpp -o compressionTests && time ./compressionTests > REPORT200.TXT
-	//SET HERE THE FILES YOU WANT TO COMPRESS
 	vector<char*> files;
 	//files.push_back("../data/english.1MB");
 	//files.push_back("../data/english.2MB");
@@ -235,8 +280,6 @@ int main() {
 	//files.push_back("../data/english.25MB");
 	//files.push_back("../data/english.50MB");
 	//files.push_back("../data/english.100MB");
-	files.push_back("../data/english.200MB");
-
-
+	//files.push_back("../data/english.200MB");
 	runSuite(files);
 }
