@@ -25,7 +25,7 @@ using namespace std::chrono;
 // ##
 // ##	g++ -O3 ../src/sarray/sarray.cpp sarrayTests.cpp -o sarrayTests && ./sarrayTests > IndexArrayReport.txt
 // ##
-// ##   4. Observe o relatório de saída: IndexArrayReport.txt
+// ##   4. Observe o relatório de saída: IndexArrayTestReport.txt
 // ##
 // ## Ps: Considere remover as linhas 60 e 61, quando um número grande de execuções, pois estas
 // ## imprimem os valores de saída para cada execução, em forma de "tabela".
@@ -64,9 +64,6 @@ void calculate_mean_time_execution(vector<float> timestamps, bool type){
 }
 
 void run_test(char* txt, int txtlen){
-	int* sarray;
-	int* Llcp;
-	int* Rlcp;
 
 	vector<float> timestamps;
 
@@ -76,6 +73,10 @@ void run_test(char* txt, int txtlen){
 	float seconds = 0;
 
 	for (int i = 0; i < EXECUTIONS; i++){
+
+		int* sarray;
+		int* Llcp;
+		int* Rlcp;
 
 		t1 = high_resolution_clock::now();
 		build_sarray_LRlcp(txt, txtlen, &sarray, &Llcp, &Rlcp);
@@ -118,6 +119,7 @@ void run_suite(vector<char*> files){
 			printf("Inicializando os testes para o arquivo: %s.\nArquivo de tamanho: %d\n", files.at(i),size);
 			
 			run_test(text, size);
+			free(text);
 		} else {
 			printf("Arquivo %s fornecido não foi encontrado.\n",files.at(i));
 		}
@@ -127,8 +129,8 @@ void run_suite(vector<char*> files){
 int main() {
 	vector<char*> files;
 
-	/*CanterburyCorpus
-	files.push_back("../data/cantrbry/alice29.txt");
+	//CanterburyCorpus
+	/*files.push_back("../data/cantrbry/alice29.txt");
 	files.push_back("../data/cantrbry/asyoulik.txt");	
 	files.push_back("../data/cantrbry/fields.c");
 	files.push_back("../data/cantrbry/grammar.lsp");
@@ -136,12 +138,11 @@ int main() {
 	files.push_back("../data/cantrbry/plrabn12.txt");
 	files.push_back("../data/cantrbry/xargs.1");*/
 	
-	/*
-	files.push_back("../data/proteins.1MB");
-	files.push_back("../data/proteins.10MB");
-	files.push_back("../data/proteins.50MB");
-	files.push_back("../data/proteins.100MB");
-	*/
+	//files.push_back("../data/proteins.1MB");
+	//files.push_back("../data/proteins.10MB");
+	//files.push_back("../data/proteins.50MB");
+	//files.push_back("../data/proteins.100MB");
+	//files.push_back("../data/proteins.200MB");
 
 	//files.push_back("../data/meComprima_menor.txt");
 	//files.push_back("../data/bible.txt");
