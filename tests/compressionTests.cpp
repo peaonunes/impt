@@ -35,7 +35,7 @@ using namespace std::chrono;
 const int EXECUTIONS = 10;
 const int MICROSECONDS = 1000000;
 
-void calculateMeanTimeAndCompression(vector<float> timestamps,vector<float> taxCompressions,vector<float> decompressionTime,vector<int> decompressionError,int type){
+void calculate_mean_time_and_compression(vector<float> timestamps,vector<float> taxCompressions,vector<float> decompressionTime,vector<int> decompressionError,int type){
 	float meanTime = 0;
 	float meanTaxCompression = 0;
 	float meanDecompressionTime = 0;
@@ -87,12 +87,12 @@ void calculateMeanTimeAndCompression(vector<float> timestamps,vector<float> taxC
 	printf("%s\n\n", error);
 
 	printf("Média do tempo de compressão: %f.\n", (meanTime)/EXECUTIONS);
-	printf("Média da taxa de compressão: %f.\n", (meanTaxCompression)/EXECUTIONS);
+	printf("Tamanho do arquivo após compressão: %f%c.\n", (meanTaxCompression)/EXECUTIONS, '%');
 	printf("Média do tempo de descompressão: %f.\n", (meanDecompressionTime)/EXECUTIONS);
 	printf("Média de erro: %f.\n\n", (meanError)/EXECUTIONS);
 }
 
-int getFileSize(char* filename)
+int get_file_size(char* filename)
 {
     FILE *p_file = NULL;
     p_file = fopen(filename,"rb");
@@ -102,7 +102,7 @@ int getFileSize(char* filename)
     return size;
 }
 
-char* buildDeCompressCmd(char gzipFileName[], char fileName[], int i){
+char* build_decompress_cmd(char gzipFileName[], char fileName[], int i){
 	char cmd[150];strcpy(cmd,"gzip -cd ");
 	strcat(cmd,gzipFileName);
 	strcat(cmd," > ");
@@ -111,7 +111,7 @@ char* buildDeCompressCmd(char gzipFileName[], char fileName[], int i){
 	return cmd;
 }
 
-char* buildCompressCmd(char* filename, char gzipFileName[]){
+char* build_compress_cmd(char* filename, char gzipFileName[]){
 	char cmd[150];strcpy(cmd,"gzip -c ");
 	strcat(cmd,filename);
 	strcat(cmd," > ");
@@ -119,7 +119,7 @@ char* buildCompressCmd(char* filename, char gzipFileName[]){
 	return cmd;
 }
 
-void runTest(char* txt, int txtlen, char cmd[], char fileName[], char gzipFileName[]){
+void run_test(char* txt, int txtlen, char cmd[], char fileName[], char gzipFileName[]){
 	// SET LS & LL
 	int search_window_length =  (1 << 12) - 1;
 	int lookahead_length = (1 << 4) - 1;
@@ -187,7 +187,7 @@ void runTest(char* txt, int txtlen, char cmd[], char fileName[], char gzipFileNa
 
 		duration = duration_cast<microseconds>( t2 - t1 ).count();
 		seconds = duration/MICROSECONDS;
-		c = (float)getFileSize(gzipFileName)/(float)txtlen;
+		c = (float)get_file_size(gzipFileName)/(float)txtlen;
 		
 		timestampsGZIP.push_back(seconds);
 		taxCompressionsGZIP.push_back(c);
@@ -217,7 +217,7 @@ void runTest(char* txt, int txtlen, char cmd[], char fileName[], char gzipFileNa
 	    decompressionError78.push_back(strcmp(txt,decoded_text78));
 		
 	    // ################################## CALL GZIP ##########################################
-	    char* cmd2 = buildDeCompressCmd(gzipFileName,fileName,i);
+	    char* cmd2 = build_decompress_cmd(gzipFileName,fileName,i);
 	    t1 = high_resolution_clock::now();
 		system (cmd2);
 		t2 = high_resolution_clock::now();
@@ -228,19 +228,19 @@ void runTest(char* txt, int txtlen, char cmd[], char fileName[], char gzipFileNa
 		decompressionErrorGZIP.push_back(0);
 	}
 
-	calculateMeanTimeAndCompression(timestamps,taxCompressions,decompressionTime,decompressionError,0);
-	calculateMeanTimeAndCompression(timestamps78,taxCompressions78,decompressionTime78,decompressionError78,1);
-	calculateMeanTimeAndCompression(timestampsGZIP,taxCompressionsGZIP,decompressionTimeGZIP,decompressionErrorGZIP,2);
+	calculate_mean_time_and_compression(timestamps,taxCompressions,decompressionTime,decompressionError,0);
+	calculate_mean_time_and_compression(timestamps78,taxCompressions78,decompressionTime78,decompressionError78,1);
+	calculate_mean_time_and_compression(timestampsGZIP,taxCompressionsGZIP,decompressionTimeGZIP,decompressionErrorGZIP,2);
 }
 
-void runSuite(vector<char*> files){
+void run_suite(vector<char*> files){
 
 	printf("\n######################################################");
 	printf("\n################# BATERIA DE TESTES ##################");
 	printf("\n############# COMPRESSAO E DESCOMPRESSAO #############\n");
 	printf("\nLegenda:\nLinha 1: ID da Execução");
 	printf("\nLinha 2: Tempo de Compressão (segundos)");
-	printf("\nLinha 3: Taxa de Compressão (tamanho final com relação ao original)");
+	printf("\nLinha 3: Tamanho relativo ao tamanho original do arquivo original");
 	printf("\nLinha 4: Tempo de Descompressão");
 	printf("\nLinha 5: Erro de Descompressão\n\n");
 
@@ -265,15 +265,15 @@ void runSuite(vector<char*> files){
 		char gzipFileName[150];strcpy(gzipFileName,files.at(i));
 		strcat(gzipFileName,".gz");
 
-		char* cmd = buildCompressCmd(files.at(i),gzipFileName);
+		char* cmd = build_compress_cmd(files.at(i),gzipFileName);
 		
-		runTest(txt, txtlen, cmd, files.at(i), gzipFileName);
+		run_test(txt, txtlen, cmd, files.at(i), gzipFileName);
 	}
 }
 
 int main() {
 	vector<char*> files;
-	//files.push_back("../data/english.1MB");
+	files.push_back("../data/english.1MB");
 	//files.push_back("../data/english.2MB");
 	//files.push_back("../data/english.5MB");
 	//files.push_back("../data/english.10MB");
@@ -281,5 +281,5 @@ int main() {
 	//files.push_back("../data/english.50MB");
 	//files.push_back("../data/english.100MB");
 	//files.push_back("../data/english.200MB");
-	runSuite(files);
+	run_suite(files);
 }
