@@ -17,6 +17,9 @@
 
 using namespace std;
 
+const int PRINT_OCC_SOFT_LIMIT = 10;
+const int PRINT_OCC_HARD_LIMIT = 20;
+
 program_args::program_args()
 : mode_flag(0),
 compression_flag(LZ78),
@@ -24,7 +27,8 @@ pattern_file(0),
 help_flag(false),
 count_flag(false),
 index_file(0),
-text_file(0) { }
+text_file(0),
+largest_pattern_length(0) { }
 
 program_args::~program_args() { }
 
@@ -98,6 +102,7 @@ program_args get_program_parameters(int argc, char** argv) {
 	} else if (args.mode_flag == SEARCH_MODE) {
 		if (optind < argc) {
 			if (!args.pattern_file) {
+				args.largest_pattern_length = strlen(argv[optind]);
 				args.patterns.push_back(argv[optind++]);
 			}
 		}
@@ -140,6 +145,10 @@ void read_pattern_file(program_args &args) {
 		buffer = fr.readLine();
 
 		if (buffer.size()) {
+			if (buffer.size() > args.largest_pattern_length) {
+				args.largest_pattern_length = buffer.size();
+			}
+
 			args.patterns.push_back(buffer);
 		}
 	}
@@ -157,8 +166,10 @@ void search_index_file(program_args &args) {
 	int* sarray;
 	int* Llcp;
 	int* Rlcp;
-	int start, end;
-	char* byte_array;
+	int* sorted_occurrences;
+	int start, end, start_print, end_print;
+	int starting_point, pattern_size, total_occ;
+	char *byte_array, *print_occ;
 	uint8_t compression_mode;
 
 	fread(&compression_mode, sizeof(uint8_t), 1, fp);
@@ -177,6 +188,7 @@ void search_index_file(program_args &args) {
 		text = lz78_decode(encoded_byte_array, code_len, size);
 	}
 	free(encoded_byte_array);
+	// printf("%s\n", text);
 
 	// Suffix array
 	fread(&code_len, sizeof(uint32_t), 1, fp);
@@ -221,21 +233,54 @@ void search_index_file(program_args &args) {
 	free(byte_array);
 
 	// Loop through patterns and search
+	sorted_occurrences = (int*)malloc(size * sizeof(int));
+	byte_array = (char*)malloc(args.largest_pattern_length + 1);
+	print_occ = (char*)malloc((PRINT_OCC_HARD_LIMIT * 2) + args.largest_pattern_length + 1);
 	for (int i = 0; i < args.patterns.size(); ++i) {
 		strcpy(byte_array, args.patterns[i].c_str());
+		pattern_size = strlen(byte_array);
 
-		find_occurrences(&start, &end, text, size, byte_array, strlen(byte_array), sarray, Llcp, Rlcp);
+		find_occurrences(&start, &end, text, size, byte_array, pattern_size, sarray, Llcp, Rlcp);
+		total_occ = end - start + 1;
 
 		printf("Padrão: %s\n", byte_array);
-		if (args.count_flag) {
-			printf("%d ocorrências\n", end - start + 1);
-		} else {
-			for (int i = start; i <= end; i++) {
-				if (sarray[i]) printf("[...]");
-				printf("%s\n", &text[sarray[i]]);
+		printf("%d ocorrências\n", total_occ);
+		if (!args.count_flag) {
+			memcpy(sorted_occurrences, &sarray[start], total_occ * sizeof(uint32_t));
+			std::sort(sorted_occurrences, &sorted_occurrences[total_occ - 1]);
+
+			for (int j = 0; j < total_occ; ++j) {
+				start_print = starting_point = sorted_occurrences[j];
+				end_print = start_print + pattern_size;
+
+				while (start_print > 0
+					&& starting_point - start_print < PRINT_OCC_HARD_LIMIT
+					&& text[start_print - 1] != '\n'
+					&& (starting_point - start_print < PRINT_OCC_SOFT_LIMIT
+						|| text[start_print - 1] != ' ')) {
+					--start_print;
+				}
+
+				starting_point = end_print;
+				while (end_print < size
+					&& end_print - starting_point < PRINT_OCC_HARD_LIMIT
+					&& text[end_print + 1] != '\n'
+					&& (end_print - starting_point < PRINT_OCC_SOFT_LIMIT
+						|| text[end_print + 1] != ' ')) {
+					++end_print;
+				}
+
+				strncpy(print_occ, (text + start_print), (end_print - start_print + 1));
+				print_occ[end_print - start_print + 1] = 0;
+
+				if (start_print) printf("[...]");
+				printf("%s", print_occ);
+				if (text[end_print]) printf("[...]");
+				printf("\n");
 			}
 		}
 	}
+	free(byte_array);
 }
 
 void create_index_file(program_args &args) {

@@ -1,6 +1,7 @@
 #ifndef UTILS_H
 #define UTILS_H
 
+#include <cstdint>
 #include <vector>
 
 unsigned char const INDEX_MODE = 0;
@@ -20,6 +21,7 @@ struct program_args {
   bool count_flag;
   char* index_file;
   char* text_file;
+  uint32_t largest_pattern_length;
 };
 
 program_args get_program_parameters(int argc, char** argv);
