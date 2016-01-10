@@ -14,15 +14,15 @@ static inline void decode_pointer(uint8_t code_ptr1, uint8_t code_ptr2, uint16_t
 	(*length) = code_ptr2 & 0x000f;
 }
 
-void prefix_match(char* text, int txtlen, int cursor, int Ls, int Ll, uint16_t* jump, uint8_t* length) {
+void prefix_match(char* text, size_t txtlen, size_t cursor, int Ls, int Ll, uint16_t* jump, uint8_t* length) {
 	uint8_t max_matches = 0;
 	uint16_t result_jump = 0;
-	int i = 0;
+	size_t i = 0;
 	uint8_t matches;
-	int window_limit = cursor + Ll - 1;
+	size_t window_limit = cursor + Ll - 1;
 
 	if (txtlen < window_limit) {
-		window_limit = txtlen;
+		window_limit = txtlen - 1;
 	}
 
 	if (cursor > Ls) {
@@ -32,7 +32,7 @@ void prefix_match(char* text, int txtlen, int cursor, int Ls, int Ll, uint16_t* 
 	while (i < cursor) {
 		matches = 0;
 
-		while (cursor + matches <= window_limit
+		while (cursor + matches < window_limit
 				&& text[i + matches] == text[cursor + matches]) {
 			++matches;
 		}
@@ -49,9 +49,9 @@ void prefix_match(char* text, int txtlen, int cursor, int Ls, int Ll, uint16_t* 
 	(*jump) = result_jump;
 }
 
-uint8_t* lz77_encode(char* txt, int txtlen, int Ls, int Ll, uint32_t* code_length) {
-	int cursor = 0;
-	uint32_t code_index = 0;
+uint8_t* lz77_encode(char* txt, size_t txtlen, int Ls, int Ll, size_t* code_length) {
+	size_t cursor = 0;
+	size_t code_index = 0;
 	uint8_t* code = (uint8_t*)malloc(3 * txtlen * sizeof(uint8_t));
 	uint16_t jump;
 	uint8_t match_length, next_char, ptr1, ptr2;
@@ -74,12 +74,12 @@ uint8_t* lz77_encode(char* txt, int txtlen, int Ls, int Ll, uint32_t* code_lengt
 	return code;
 }
 
-void lz77_decode(uint8_t *code, int codelen, int Ls, int Ll, char* txt) {
+void lz77_decode(uint8_t *code, size_t codelen, int Ls, int Ll, char* txt) {
 	uint16_t jump;
 	uint8_t match_length;
-	int i = 0;
-	int j;
-	int text_index = 0;
+	size_t i = 0;
+	size_t j;
+	size_t text_index = 0;
 
 	while (i < codelen) {
 		decode_pointer(code[i], code[i + 1], &jump, &match_length);
@@ -92,6 +92,4 @@ void lz77_decode(uint8_t *code, int codelen, int Ls, int Ll, char* txt) {
 
 		i += 3;
 	}
-	if (txt[text_index] != '\0')
-		txt[++text_index] = '\0';
 }

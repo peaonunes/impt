@@ -1,7 +1,7 @@
 #include <cstdio>
 #include <cstring>
 #include <cstdlib>
-#include <string> 
+#include <string>
 #include <vector>
 #include <iostream>
 #include <chrono>
@@ -64,6 +64,9 @@ void calculate_mean_time_execution(vector<float> timestamps, bool type){
 }
 
 void run_test(char* txt, int txtlen){
+	size_t* sarray;
+	size_t* Llcp;
+	size_t* Rlcp;
 
 	vector<float> timestamps;
 
@@ -73,18 +76,17 @@ void run_test(char* txt, int txtlen){
 	float seconds = 0;
 
 	for (int i = 0; i < EXECUTIONS; i++){
-
-		int* sarray;
-		int* Llcp;
-		int* Rlcp;
-
 		t1 = high_resolution_clock::now();
 		build_sarray_LRlcp(txt, txtlen, &sarray, &Llcp, &Rlcp);
 	    t2 = high_resolution_clock::now();
 
     	duration = duration_cast<microseconds>( t2 - t1 ).count();
-		seconds = duration/MICROSECONDS;		
+		seconds = duration/MICROSECONDS;
 		timestamps.push_back(seconds);
+
+		free(sarray);
+		free(Llcp);
+		free(Rlcp);
 	}
 
 	calculate_mean_time_execution(timestamps,true);
@@ -97,14 +99,12 @@ void run_suite(vector<char*> files){
 	printf("\nLegenda:\nLinha 1: ID da Execução");
 	printf("\nLinha 2: Tempo de indexação (segundos)\n");
 
-	int size;
+	size_t size;
 	char *text;
 	for (int i = 0; i < files.size(); i++){
-
 		FILE *fp = fopen(files.at(i), "r");
 
 		if(fp){
-
 			fseek(fp, 0, SEEK_END);
 			size = ftell(fp);
 			fseek(fp, 0, SEEK_SET);
@@ -116,8 +116,8 @@ void run_suite(vector<char*> files){
 			printf("\n######################################################");
 			printf("\n################# ARQUIVO ID: %d ######################", (i+1));
 			printf("\n######################################################\n");
-			printf("Inicializando os testes para o arquivo: %s.\nArquivo de tamanho: %d\n", files.at(i),size);
-			
+			printf("Inicializando os testes para o arquivo: %s.\nArquivo de tamanho: %lu\n", files.at(i),size);
+
 			run_test(text, size);
 			free(text);
 		} else {
@@ -128,16 +128,34 @@ void run_suite(vector<char*> files){
 
 int main() {
 	vector<char*> files;
+	printf("sizeof: %lu", sizeof(size_t));
+
+	// //CanterburyCorpus
+	// files.push_back("../data/cantrbry/alice29.txt");
+	// files.push_back("../data/cantrbry/asyoulik.txt");
+	// files.push_back("../data/cantrbry/fields.c");
+	// files.push_back("../data/cantrbry/grammar.lsp");
+	// files.push_back("../data/cantrbry/lcet10.txt");
+	// files.push_back("../data/cantrbry/plrabn12.txt");
+	// files.push_back("../data/cantrbry/xargs.1");
+
+	// files.push_back("../data/arquivo.txt");
+	// files.push_back("../data/proteins.10MB");
+
+	// files.push_back("../data/proteins.10MB");
+	// files.push_back("../data/proteins.50MB.txt");
+	// files.push_back("../data/proteins.100MB");
+	files.push_back("../data/proteins.200MB");
 
 	//CanterburyCorpus
 	/*files.push_back("../data/cantrbry/alice29.txt");
-	files.push_back("../data/cantrbry/asyoulik.txt");	
+	files.push_back("../data/cantrbry/asyoulik.txt");
 	files.push_back("../data/cantrbry/fields.c");
 	files.push_back("../data/cantrbry/grammar.lsp");
 	files.push_back("../data/cantrbry/lcet10.txt");
 	files.push_back("../data/cantrbry/plrabn12.txt");
 	files.push_back("../data/cantrbry/xargs.1");*/
-	
+
 	//files.push_back("../data/proteins.1MB");
 	//files.push_back("../data/proteins.10MB");
 	//files.push_back("../data/proteins.50MB");

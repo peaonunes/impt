@@ -1,5 +1,4 @@
 #include <iostream>
-#include <cstddef>
 #include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
@@ -15,7 +14,7 @@ public:
   Dictionary_Tree* left;
   Dictionary_Tree* right;
   bool is_empty;
-  
+
   Dictionary_Tree();
   Dictionary_Tree(char c, int l, Dictionary_Tree* p);
   Dictionary_Tree* findEntry(char c);
@@ -23,14 +22,14 @@ public:
 };
 
 Dictionary_Tree::Dictionary_Tree() {
-  
+
   is_empty = false;
   left = 0;
   right = 0;
 }
 
 Dictionary_Tree::Dictionary_Tree(char c, int l, Dictionary_Tree* p) {
-  
+
   is_empty = true;
   byte = c;
   label = l;
@@ -41,10 +40,9 @@ Dictionary_Tree::Dictionary_Tree(char c, int l, Dictionary_Tree* p) {
 
 /* Searches for a determined node value in the dictionary tree */
 Dictionary_Tree* Dictionary_Tree::findEntry(char c){
-  
   if  ((&right) == 0) return 0;
   Dictionary_Tree* cur = right;
-  
+
   while (cur != 0) {
     if  (cur->byte == c) return cur;
     cur = cur->left;
@@ -72,16 +70,16 @@ Dictionary_Tree* Dictionary_Tree::insertEntry(char byte, int label){
 
 /* writes a label as a number according to the max label size */
 void writeLabel (int label, int max_label, uint8_t* &code, uint32_t &code_length, unsigned char &buffer, int &buffer_size) {
-  
+
   int mask;
 
   if    (max_label == 0) return;
   for   (mask = 1; max_label > 1; max_label /=2) mask *= 2;
-  
+
   for   (; mask != 0; mask /= 2) {
     buffer = buffer * 2 + ((label & mask) / mask);
     buffer_size++;
-    
+
     if  (buffer_size == 8) {
       //std::cout.put(buffer);
       code[code_length++] = buffer;
@@ -96,10 +94,10 @@ void writeLetter (char c, uint8_t* &code, uint32_t &code_length, unsigned char &
   writeLabel((unsigned char) c, 128, code, code_length, buffer, buffer_size);
 }
 
-uint8_t* lz78_encode (char* text, uint32_t text_length, uint32_t* code_length){
+uint8_t* lz78_encode (char* text, size_t text_length, size_t* code_length){
   int max_label = (1 << 25);
   int dictCount = 1;
-  
+
   uint32_t temp_code_length = 0;
   int index = 0;
   char c;
@@ -108,25 +106,24 @@ uint8_t* lz78_encode (char* text, uint32_t text_length, uint32_t* code_length){
 
   Dictionary_Tree * head = new Dictionary_Tree(0, 0, (Dictionary_Tree *)0);
   Dictionary_Tree *cur = head;
-  
+
   unsigned char buffer = 0;
   int buffer_size = 0;
 
   while(index < text_length) {
-    
-    c = text[index++];  
+
+    c = text[index++];
     Dictionary_Tree* dict_entry = cur->findEntry(c);
-    
+
     if(dict_entry == 0) {
-      
       writeLabel(cur->label, max_label, code, temp_code_length, buffer, buffer_size);
       writeLetter(c, code, temp_code_length, buffer, buffer_size);
-      
+
       cur->insertEntry(c, dictCount);
       dictCount++;
-      cur = head;    
+      cur = head;
     } else {
-      
+
       cur = dict_entry;
     }
   }
@@ -141,9 +138,9 @@ uint8_t* lz78_encode (char* text, uint32_t text_length, uint32_t* code_length){
 
 /* reads in labels written out using writeLabel. */
 int readLabel (int max_label, uint8_t* code, uint32_t code_length, int &index, int &buffer, int &buffer_size) {
-  
+
   int label;
-  
+
   for   (label=0; max_label != 0; max_label /= 2) {
     if  (buffer_size == 0) {
       if (index >= code_length) return -1;
@@ -161,24 +158,24 @@ int readLabel (int max_label, uint8_t* code, uint32_t code_length, int &index, i
 
 /* reads in letters written out using writeLetter. */
 int readLetter (char &c, uint8_t* code, uint32_t code_length, int &index, int &buffer, int &buffer_size) {
-  
+
   int val = readLabel(128, code, code_length, index, buffer, buffer_size);
   if (val == -1) return 0;
   c = (char) val;
-  
+
   return 1;
 }
 
 /* Runs through the dict tree upwards to recover the encoded text from a given entry */
 void getDecodedEntry(Dictionary_Tree *last_node, char* &text, int &index) {
-  
+
   std::string str = "";
-  
+
   while(last_node != 0 && last_node->parent != 0) {
     str = last_node->byte + str;
     last_node = last_node->parent;
   }
-  for (int i = 0; i < str.size(); ++i) text[index++] = str[i]; 
+  for (int i = 0; i < str.size(); ++i) text[index++] = str[i];
 }
 
 /* changes the dictionary size */
@@ -194,20 +191,19 @@ void expandDictionary(Dictionary_Tree** &dict, long size) {
   }
 }
 
-char* lz78_decode (uint8_t* code, uint32_t code_length, uint32_t text_length) {
-  
+char* lz78_decode (uint8_t* code, size_t code_length, size_t text_length) {
+
   int max_label = (1 << 25);
   int dictCount = 1;
-  
   Dictionary_Tree* head = new Dictionary_Tree(0, 0, (Dictionary_Tree *)0);
   Dictionary_Tree* cur = head;
 
   /* Initial dict size */
   long size = 256;
-  
+
   Dictionary_Tree** dict = new Dictionary_Tree*[size];
   dict[0] = head;
-  
+
   char* text = (char*)malloc(text_length * sizeof(char));
   int text_index = 0;
   int code_index = 0;
@@ -216,48 +212,46 @@ char* lz78_decode (uint8_t* code, uint32_t code_length, uint32_t text_length) {
   int nextLabel;
   char c = 0;
   char nextC = 0;
-  
+
   int buffer;
   int buffer_size = 0;
 
   int label = readLabel(max_label, code, code_length, code_index, buffer, buffer_size);
   readLetter(c, code, code_length, code_index, buffer, buffer_size);
-  
-  while((nextLabel = readLabel(max_label, code, code_length, code_index, buffer, buffer_size)) != -1 
+
+  while((nextLabel = readLabel(max_label, code, code_length, code_index, buffer, buffer_size)) != -1
         && readLetter(nextC, code, code_length, code_index, buffer, buffer_size) != -1 ) {
-    
     if(label < size && dict[label] != 0) {
-    
+
       Dictionary_Tree* newNode;
       Dictionary_Tree* cur = dict[label];
-    
+
       if( &c != 0 ) {
-    
+
         newNode = cur->insertEntry(c, dictCount);
-    
+
         while(dictCount >= size) {
-    
+
           expandDictionary(dict, size);
           size = size*2;
         }
-    
+
         dict[dictCount] = newNode;
       } else {
-    
+
         newNode = cur;
       }
-    
+
       getDecodedEntry(newNode, text, text_index);
-      dictCount++;  
+      dictCount++;
     }
-    
+
     c = nextC;
     label = nextLabel;
     nextC = 0;
   }
-  
+
   if(label < size && dict[label] != 0) {
-  
     Dictionary_Tree* newNode;
     Dictionary_Tree* cur = dict[label];
     newNode = cur;
