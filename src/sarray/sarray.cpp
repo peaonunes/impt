@@ -7,9 +7,9 @@
 #include "sarray.h"
 
 typedef struct sarray_temp {
-	int first_block_order;
-	int second_block_order;
-	int start_index;
+	long first_block_order;
+	long second_block_order;
+	size_t start_index;
 } sarray_temp;
 
 bool operator <(const sarray_temp &lh, const sarray_temp &rh) {
@@ -28,15 +28,15 @@ bool operator <(const sarray_temp &lh, const sarray_temp &rh) {
 // Aqui, first_block_order é usado pra guardar a letra apenas,
 // de modo a reusar a struct sarray_temp.
 // O algoritmo de ordenação usado aqui é o bucket sort.
-sarray_temp* sort_letter_occurrences(sarray_temp* stemp, int len) {
-	int buckets[256];
-	int array_size = len * sizeof(sarray_temp);
-	int totalCount = 0;
-	int index;
-	int oldBucketValue;
+sarray_temp* sort_letter_occurrences(sarray_temp* stemp, size_t len) {
+	long buckets[256];
+	size_t array_size = len * sizeof(sarray_temp);
+	size_t totalCount = 0;
+	long index;
+	size_t oldBucketValue;
 	sarray_temp *new_stemp = (sarray_temp*)malloc(array_size);
 
-	memset(buckets, 0, 256 * sizeof(int));
+	memset(buckets, 0, 256 * sizeof(size_t));
 
 	for (int i = 0; i < len; i++) {
 		++buckets[stemp[i].first_block_order];
@@ -63,15 +63,15 @@ sarray_temp* sort_letter_occurrences(sarray_temp* stemp, int len) {
 }
 
 // Construindo o sarray
-int* build_sarray(char* text, int text_length, int explimit) {
-	int array_size = text_length * sizeof(int);
-	int aux = 0;
-	int group_size = 1;
-	int stemp_arraysize = text_length * sizeof(sarray_temp);
+size_t* build_sarray(char* text, size_t text_length, uint32_t explimit) {
+	size_t array_size = text_length * sizeof(size_t);
+	long aux = 0;
+	size_t group_size = 1;
+	size_t stemp_arraysize = text_length * sizeof(sarray_temp);
 	sarray_temp* stemp = (sarray_temp*)malloc(stemp_arraysize);
-	int *final_sarray = (int*)malloc(array_size);
+	size_t *final_sarray = (size_t*)malloc(array_size);
 
-	for (int i = 0; i < text_length; ++i) {
+	for (size_t i = 0; i < text_length; ++i) {
 		stemp[i].first_block_order = text[i];
 		stemp[i].second_block_order = i;
 		stemp[i].start_index = 0;
@@ -79,15 +79,15 @@ int* build_sarray(char* text, int text_length, int explimit) {
 
 	stemp = sort_letter_occurrences(stemp, text_length);
 
-	for (int i = 0; i < text_length; ++i) {
+	for (size_t i = 0; i < text_length; ++i) {
 		if (i > 0 && stemp[i].first_block_order != stemp[i - 1].first_block_order)
 			++aux;
 
 		final_sarray[stemp[i].second_block_order] = aux;
 	}
 
-	for (int k = 0; k < explimit; ++k) {
-		for (int i = 0; i < text_length; ++i) {
+	for (uint32_t k = 0; k < explimit; ++k) {
+		for (size_t i = 0; i < text_length; ++i) {
 			stemp[i].first_block_order = final_sarray[i];
 			stemp[i].start_index = i;
 
@@ -98,11 +98,11 @@ int* build_sarray(char* text, int text_length, int explimit) {
 			}
 		}
 
-		std::sort(stemp, stemp + text_length);
+		std::sort(stemp, &stemp[text_length]);
 
 		aux = 0;
 
-		for (int i = 0; i < text_length; ++i) {
+		for (size_t i = 0; i < text_length; ++i) {
 			if (i > 0
 					&&
 					(stemp[i].first_block_order != stemp[i - 1].first_block_order
@@ -124,8 +124,8 @@ int* build_sarray(char* text, int text_length, int explimit) {
 	return final_sarray;
 }
 
-int lcp(char* text1, char* text2) {
-	int lcp = 0;
+size_t lcp(char* text1, char* text2) {
+	size_t lcp = 0;
 
 	while(text1[lcp] != '\0'
 			&& text2[lcp] != '\0'
@@ -136,8 +136,8 @@ int lcp(char* text1, char* text2) {
 	return lcp;
 }
 
-void build_LRlcp(int* Llcp, int* Rlcp, int* sarray, char* text, int left, int right) {
-	int middle;
+void build_LRlcp(size_t* Llcp, size_t* Rlcp, size_t* sarray, char* text, size_t left, size_t right) {
+	size_t middle;
 
 	if (right - left > 1) {
 		middle = (left + right) / 2;
@@ -152,26 +152,34 @@ void build_LRlcp(int* Llcp, int* Rlcp, int* sarray, char* text, int left, int ri
 
 // Os parâmetros sarray, Llcp e Rlcp devem ser passados por referência, devendo
 // ser na verdade ponteiros para inteiros.
-void build_sarray_LRlcp(char* text, int text_length, int** sarray, int** Llcp, int** Rlcp) {
-	int explimit = ceil(log2(text_length));
-	size_t array_size = text_length * sizeof(int);
+void build_sarray_LRlcp(char* text, size_t text_length, size_t** sarray, size_t** Llcp, size_t** Rlcp) {
+	uint32_t explimit = ceil(log2(text_length));
+	size_t array_size = text_length * sizeof(size_t);
 
-	(*Llcp) = (int*)malloc(array_size);
+	(*Llcp) = (size_t*)malloc(array_size);
 	memset(*Llcp, -1, array_size);
-	(*Rlcp) = (int*)malloc(array_size);
+	(*Rlcp) = (size_t*)malloc(array_size);
 	memset(*Rlcp, -1, array_size);
 
 	(*sarray) = build_sarray(text, text_length, explimit);
 
+	// printf("\n---\n");
+	// for (int i = 0; i < text_length; ++i)
+	// {
+	// 	if ((*sarray)[i] < 0 || (*sarray)[i] >= text_length)
+	// 		printf("Anomalia encontrada no indice %d: %d\n", i, (*sarray)[i]);
+	// }
+	// printf("\n---\n");
+
 	build_LRlcp(*Llcp, *Rlcp, *sarray, text, 0, text_length - 1);
 }
 
-int predecessor(char* text, int txtlen, char* pattern, int patlen, int* sarray, int* Llcp, int* Rlcp) {
-	int L = lcp(pattern, &text[sarray[0]]);
-	int R = lcp(pattern, &text[sarray[txtlen-1]]);
-	int l = 0;
-	int r = txtlen - 1;
-	int h, H;
+size_t predecessor(char* text, size_t txtlen, char* pattern, size_t patlen, size_t* sarray, size_t* Llcp, size_t* Rlcp) {
+	size_t L = lcp(pattern, &text[sarray[0]]);
+	size_t R = lcp(pattern, &text[sarray[txtlen-1]]);
+	size_t l = 0;
+	size_t r = txtlen - 1;
+	size_t h, H;
 
 	// se o padrão for maior ou igual que o último sufixo
 	if (R == patlen
@@ -236,12 +244,12 @@ int predecessor(char* text, int txtlen, char* pattern, int patlen, int* sarray, 
 	return l;
 }
 
-int successor(char* text, int txtlen, char* pattern, int patlen, int* sarray, int* Llcp, int* Rlcp) {
-	int L = lcp(pattern, &text[sarray[0]]);
-	int R = lcp(pattern, &text[sarray[txtlen - 1]]);
-	int l = 0;
-	int r = txtlen - 1;
-	int h, H;
+size_t successor(char* text, size_t txtlen, char* pattern, size_t patlen, size_t* sarray, size_t* Llcp, size_t* Rlcp) {
+	size_t L = lcp(pattern, &text[sarray[0]]);
+	size_t R = lcp(pattern, &text[sarray[txtlen - 1]]);
+	size_t l = 0;
+	size_t r = txtlen - 1;
+	size_t h, H;
 
 	// se o padrão for menor ou igual ao primeiro sufixo
 	if (L == patlen
@@ -312,51 +320,57 @@ int successor(char* text, int txtlen, char* pattern, int patlen, int* sarray, in
 	return r;
 }
 
-void find_occurrences(int* matches_start, int* matches_end, char* text, int txtlen, char* pattern, int patlen, int* sarray, int* Llcp, int* Rlcp) {
-	int pred = predecessor(text, txtlen, pattern, patlen, sarray, Llcp, Rlcp);
-	int succ = successor(text, txtlen, pattern, patlen, sarray, Llcp, Rlcp);
+void find_occurrences(size_t* matches_start, size_t* matches_end, char* text, size_t txtlen, char* pattern, size_t patlen, size_t* sarray, size_t* Llcp, size_t* Rlcp) {
+	size_t pred = predecessor(text, txtlen, pattern, patlen, sarray, Llcp, Rlcp);
+	size_t succ = successor(text, txtlen, pattern, patlen, sarray, Llcp, Rlcp);
 
 	(*matches_start) = succ;
 	(*matches_end) = pred;
 }
 
 // A ser usado para a compressão
-char* get_bytes_from_array(int* array, uint32_t arraylen) {
-    uint32_t result_size = arraylen << 2;
-    char *result = (char*)malloc(result_size + 1);
-    uint32_t result_index = 0;
-    uint32_t array_index = 0;
+char* get_bytes_from_array(size_t* array, size_t arraylen) {
+    size_t result_size = arraylen << 3;
+    char *result = (char*)malloc(result_size);
+    size_t result_index = 0;
+    size_t array_index = 0;
 
     while(array_index < arraylen) {
+        result[result_index++] = (array[array_index] & 0xff00000000000000) >> 56;
+        result[result_index++] = (array[array_index] & 0xff000000000000) >> 48;
+        result[result_index++] = (array[array_index] & 0xff0000000000) >> 40;
+        result[result_index++] = (array[array_index] & 0xff00000000) >> 32;
         result[result_index++] = (array[array_index] & 0xff000000) >> 24;
-        result[result_index++] = (array[array_index] & 0x00ff0000) >> 16;
-        result[result_index++] = (array[array_index] & 0x0000ff00) >> 8;
-        result[result_index++] = array[array_index] & 0x000000ff;
+        result[result_index++] = (array[array_index] & 0xff0000) >> 16;
+        result[result_index++] = (array[array_index] & 0xff00) >> 8;
+        result[result_index++] = (array[array_index] & 0xff);
 
         ++array_index;
     }
 
-    result[result_index] = 0;
-
     return result;
 }
 
-int* get_int_array_from_bytes(char* byte_array, uint32_t arraylen) {
-	uint32_t result_size = arraylen << 2;
-	int* result = (int*)malloc(result_size);
-	int aux;
+size_t* get_int_array_from_bytes(char* byte_array, size_t arraylen) {
+	size_t result_size = arraylen << 3;
+	size_t* result = (size_t*)malloc(result_size);
+	size_t aux;
 
-	uint32_t result_index = 0;
-	uint32_t bytearray_index = 0;
+	size_t result_index = 0;
+	size_t bytearray_index = 0;
 
 	while (bytearray_index < result_size) {
-		aux = 0 | (byte_array[bytearray_index] & 0xff) << 24
-			| (byte_array[bytearray_index + 1] & 0xff) << 16
-			| (byte_array[bytearray_index + 2] & 0xff) << 8
-			| (byte_array[bytearray_index + 3] & 0xff);
+		aux = 0;
+		aux |= ((size_t)byte_array[bytearray_index++] & 0xff) << 56;
+		aux |= ((size_t)byte_array[bytearray_index++] & 0xff) << 48;
+		aux |= ((size_t)byte_array[bytearray_index++] & 0xff) << 40;
+		aux |= ((size_t)byte_array[bytearray_index++] & 0xff) << 32;
+		aux |= ((size_t)byte_array[bytearray_index++] & 0xff) << 24;
+		aux |= ((size_t)byte_array[bytearray_index++] & 0xff) << 16;
+		aux |= ((size_t)byte_array[bytearray_index++] & 0xff) << 8;
+		aux |= ((size_t)byte_array[bytearray_index++] & 0xff);
 
 		result[result_index++] = aux;
-		bytearray_index += 4;
 	}
 
 	return result;

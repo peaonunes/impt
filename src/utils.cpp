@@ -157,83 +157,91 @@ void read_pattern_file(program_args &args) {
 void search_index_file(program_args &args) {
 	// decompress
 	FILE* fp = fopen(args.index_file, "r");
-	uint32_t size, byte_array_size;
-	uint32_t code_len;
+	size_t size, byte_array_size;
+	size_t code_len;
 	char* text;
 	uint8_t* encoded_byte_array;
 	int Ls = (1 << 12) - 1;
 	int Ll = (1 << 4) - 1;
-	int* sarray;
-	int* Llcp;
-	int* Rlcp;
-	int* sorted_occurrences;
-	int start, end, start_print, end_print;
-	int starting_point, pattern_size, total_occ;
+	size_t* sarray;
+	size_t* Llcp;
+	size_t* Rlcp;
+	size_t* sorted_occurrences;
+	size_t start, end, start_print, end_print;
+	size_t starting_point, pattern_size, total_occ;
 	char *byte_array, *print_occ;
 	uint8_t compression_mode;
 
 	fread(&compression_mode, sizeof(uint8_t), 1, fp);
-	fread(&size, sizeof(uint32_t), 1, fp);
-	byte_array_size = size << 2;
+	fread(&size, sizeof(size_t), 1, fp);
+	byte_array_size = size * sizeof(size_t);
 
 	// Text
-	fread(&code_len, sizeof(uint32_t), 1, fp);
+	fread(&code_len, sizeof(size_t), 1, fp);
 	encoded_byte_array = (uint8_t*)malloc(code_len * sizeof(uint8_t));
 	fread(encoded_byte_array, sizeof(uint8_t), code_len, fp);
 
 	if (compression_mode == LZ77) {
 		text = (char*)malloc((size + 1) * sizeof(char));
 		lz77_decode(encoded_byte_array, code_len, Ls, Ll, text);
+		text[size] = 0;
 	} else if (compression_mode == LZ78) {
 		text = lz78_decode(encoded_byte_array, code_len, size);
 	}
 	free(encoded_byte_array);
-	// printf("%s\n", text);
 
 	// Suffix array
-	fread(&code_len, sizeof(uint32_t), 1, fp);
+	fread(&code_len, sizeof(size_t), 1, fp);
 	encoded_byte_array = (uint8_t*)malloc(code_len * sizeof(uint8_t));
 	fread(encoded_byte_array, sizeof(uint8_t), code_len, fp);
 
 	if (compression_mode == LZ77) {
-		byte_array = (char*)malloc((byte_array_size + 1) * sizeof(char));
+		byte_array = (char*)malloc((byte_array_size) * sizeof(char));
 		lz77_decode(encoded_byte_array, code_len, Ls, Ll, byte_array);
 	} else if (compression_mode == LZ78) {
 		byte_array = lz78_decode(encoded_byte_array, code_len, byte_array_size);
 	}
+
+	free(encoded_byte_array);
 	sarray = get_int_array_from_bytes(byte_array, size);
 	free(byte_array);
 
 	// Llcp
-	fread(&code_len, sizeof(uint32_t), 1, fp);
+	fread(&code_len, sizeof(size_t), 1, fp);
 	encoded_byte_array = (uint8_t*)malloc(code_len * sizeof(uint8_t));
 	fread(encoded_byte_array, sizeof(uint8_t), code_len, fp);
 
 	if (compression_mode == LZ77) {
-		byte_array = (char*)malloc((byte_array_size + 1) * sizeof(char));
+		byte_array = (char*)malloc((byte_array_size) * sizeof(char));
 		lz77_decode(encoded_byte_array, code_len, Ls, Ll, byte_array);
 	} else if (compression_mode == LZ78) {
 		byte_array = lz78_decode(encoded_byte_array, code_len, byte_array_size);
 	}
+
+	free(encoded_byte_array);
 	Llcp = get_int_array_from_bytes(byte_array, size);
 	free(byte_array);
 
 	// Rlcp
-	fread(&code_len, sizeof(uint32_t), 1, fp);
+	fread(&code_len, sizeof(size_t), 1, fp);
 	encoded_byte_array = (uint8_t*)malloc(code_len * sizeof(uint8_t));
 	fread(encoded_byte_array, sizeof(uint8_t), code_len, fp);
 
 	if (compression_mode == LZ77) {
-		byte_array = (char*)malloc((byte_array_size + 1) * sizeof(char));
+		byte_array = (char*)malloc((byte_array_size) * sizeof(char));
 		lz77_decode(encoded_byte_array, code_len, Ls, Ll, byte_array);
 	} else if (compression_mode == LZ78) {
 		byte_array = lz78_decode(encoded_byte_array, code_len, byte_array_size);
 	}
+
+	free(encoded_byte_array);
 	Rlcp = get_int_array_from_bytes(byte_array, size);
 	free(byte_array);
 
+	fclose(fp);
+
 	// Loop through patterns and search
-	sorted_occurrences = (int*)malloc(size * sizeof(int));
+	sorted_occurrences = (size_t*)malloc(size * sizeof(size_t));
 	byte_array = (char*)malloc(args.largest_pattern_length + 1);
 	print_occ = (char*)malloc((PRINT_OCC_HARD_LIMIT * 2) + args.largest_pattern_length + 1);
 	for (int i = 0; i < args.patterns.size(); ++i) {
@@ -244,9 +252,15 @@ void search_index_file(program_args &args) {
 		total_occ = end - start + 1;
 
 		printf("Padrão: %s\n", byte_array);
-		printf("%d ocorrências\n", total_occ);
-		if (!args.count_flag) {
-			memcpy(sorted_occurrences, &sarray[start], total_occ * sizeof(uint32_t));
+		if (!total_occ) {
+			printf("Nenhuma ocorrência encontrada.\n");
+		} else if (total_occ == 1) {
+			printf("1 ocorrência:\n");
+		} else {
+			printf("%lu ocorrências\n", total_occ);
+		}
+		if (!args.count_flag && total_occ) {
+			memcpy(sorted_occurrences, &sarray[start], total_occ * sizeof(size_t));
 			std::sort(sorted_occurrences, &sorted_occurrences[total_occ - 1]);
 
 			for (int j = 0; j < total_occ; ++j) {
@@ -281,25 +295,39 @@ void search_index_file(program_args &args) {
 		}
 	}
 	free(byte_array);
+	free(print_occ);
+	free(sorted_occurrences);
+	free(text);
+	free(sarray);
+	free(Llcp);
+	free(Rlcp);
+}
+
+void print_sarray(size_t* sarray, char* text, size_t size) {
+	for (size_t i = 0; i < size; i++) {
+		printf("%lu %s\n", sarray[i], &text[sarray[i]]);
+	}
 }
 
 void create_index_file(program_args &args) {
 	FILE* fp = fopen(args.text_file, "r");
-	uint32_t size, byte_array_size;
-	uint32_t code_len;
+	size_t size, byte_array_size;
+	size_t code_len;
 	char *text;
 
 	/* index file name */
 	char* after_last_slash_occurrence = strrchr(args.text_file, '/');
 	if (!after_last_slash_occurrence)
 		after_last_slash_occurrence = args.text_file;
+	else
+		after_last_slash_occurrence = after_last_slash_occurrence + 1;
 	char* index_name = (char*)malloc(strlen(after_last_slash_occurrence) + 5);
 	strcpy(index_name, after_last_slash_occurrence);
 	strcat(index_name, ".idx");
 
-	int* sarray;
-	int* Llcp;
-	int* Rlcp;
+	size_t* sarray;
+	size_t* Llcp;
+	size_t* Rlcp;
 	char* byte_array;
 	uint8_t* encoded_byte_array;
 	int Ls = (1 << 12) - 1;
@@ -308,7 +336,7 @@ void create_index_file(program_args &args) {
 	if (fp) {
 		fseek(fp, 0, SEEK_END);
 		size = ftell(fp);
-		byte_array_size = size << 2;
+		byte_array_size = size << 3;
 		fseek(fp, 0, SEEK_SET);
 		text = (char*)malloc((size + 1)*sizeof(char));
 		fread(text, sizeof(char), size, fp);
@@ -327,12 +355,10 @@ void create_index_file(program_args &args) {
 				encoded_byte_array = lz77_encode(text, size, Ls, Ll, &code_len);
 			else if (args.compression_flag == LZ78)
 				encoded_byte_array = lz78_encode(text, size, &code_len);
-
-			fwrite(&size, sizeof(uint32_t), 1, fp);
-			fwrite(&code_len, sizeof(uint32_t), 1, fp);
-			fwrite(encoded_byte_array, sizeof(uint8_t), code_len, fp);
+			fwrite(&size, sizeof(size_t), 1, fp);
+			fwrite(&code_len, sizeof(size_t), 1, fp);
+			fwrite(encoded_byte_array, sizeof(char), code_len, fp);
 			free(encoded_byte_array);
-
 
 			byte_array = get_bytes_from_array(sarray, size);
 			free(sarray);
@@ -341,8 +367,8 @@ void create_index_file(program_args &args) {
 			else if (args.compression_flag == LZ78)
 				encoded_byte_array = lz78_encode(byte_array, byte_array_size, &code_len);
 			free(byte_array);
-			fwrite(&code_len, sizeof(uint32_t), 1, fp);
-			fwrite(encoded_byte_array, sizeof(uint8_t), code_len, fp);
+			fwrite(&code_len, sizeof(size_t), 1, fp);
+			fwrite(encoded_byte_array, sizeof(char), code_len, fp);
 			free(encoded_byte_array);
 
 			byte_array = get_bytes_from_array(Llcp, size);
@@ -352,8 +378,8 @@ void create_index_file(program_args &args) {
 			else if (args.compression_flag == LZ78)
 				encoded_byte_array = lz78_encode(byte_array, byte_array_size, &code_len);
 			free(byte_array);
-			fwrite(&code_len, sizeof(uint32_t), 1, fp);
-			fwrite(encoded_byte_array, sizeof(uint8_t), code_len, fp);
+			fwrite(&code_len, sizeof(size_t), 1, fp);
+			fwrite(encoded_byte_array, sizeof(char), code_len, fp);
 			free(encoded_byte_array);
 
 			byte_array = get_bytes_from_array(Rlcp, size);
@@ -363,7 +389,7 @@ void create_index_file(program_args &args) {
 			else if (args.compression_flag == LZ78)
 				encoded_byte_array = lz78_encode(byte_array, byte_array_size, &code_len);
 			free(byte_array);
-			fwrite(&code_len, sizeof(uint32_t), 1, fp);
+			fwrite(&code_len, sizeof(size_t), 1, fp);
 			fwrite(encoded_byte_array, sizeof(uint8_t), code_len, fp);
 			free(encoded_byte_array);
 
