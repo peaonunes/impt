@@ -25,7 +25,7 @@ using namespace std::chrono;
 // ##
 // ##	g++ -O3 ../src/sarray/sarray.cpp sarrayTests.cpp -o sarrayTests && ./sarrayTests > IndexArrayReport.txt
 // ##
-// ##   4. Observe o relatório de saída: IndexArrayReport.txt
+// ##   4. Observe o relatório de saída: IndexArrayTestReport.txt
 // ##
 // ## Ps: Considere remover as linhas 60 e 61, quando um número grande de execuções, pois estas
 // ## imprimem os valores de saída para cada execução, em forma de "tabela".
@@ -76,7 +76,6 @@ void run_test(char* txt, int txtlen){
 	float seconds = 0;
 
 	for (int i = 0; i < EXECUTIONS; i++){
-
 		t1 = high_resolution_clock::now();
 		build_sarray_LRlcp(txt, txtlen, &sarray, &Llcp, &Rlcp);
 	    t2 = high_resolution_clock::now();
@@ -148,20 +147,23 @@ int main() {
 	// files.push_back("../data/proteins.100MB");
 	files.push_back("../data/proteins.200MB");
 
-	/*
-	files.push_back("../data/proteins.1MB");
-	files.push_back("../data/proteins.10MB");
-	files.push_back("../data/proteins.50MB");
-	files.push_back("../data/proteins.100MB");
-	*/
+	//CanterburyCorpus
+	/*files.push_back("../data/cantrbry/alice29.txt");
+	files.push_back("../data/cantrbry/asyoulik.txt");
+	files.push_back("../data/cantrbry/fields.c");
+	files.push_back("../data/cantrbry/grammar.lsp");
+	files.push_back("../data/cantrbry/lcet10.txt");
+	files.push_back("../data/cantrbry/plrabn12.txt");
+	files.push_back("../data/cantrbry/xargs.1");*/
+
+	//files.push_back("../data/proteins.1MB");
+	//files.push_back("../data/proteins.10MB");
+	//files.push_back("../data/proteins.50MB");
+	//files.push_back("../data/proteins.100MB");
+	//files.push_back("../data/proteins.200MB");
 
 	//files.push_back("../data/meComprima_menor.txt");
 	//files.push_back("../data/bible.txt");
 	//files.push_back("../data/arquivo.txt");
-<<<<<<< HEAD
-	runSuite(files);
-}
-=======
 	run_suite(files);
 }
->>>>>>> peaonunes/master

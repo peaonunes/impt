@@ -32,7 +32,7 @@ using namespace std::chrono;
 // ## imprimem os valores de saída para cada execução, em forma de "tabela".
 // ############################################################################################
 
-const int EXECUTIONS = 10;
+const int EXECUTIONS = 1;
 const int MICROSECONDS = 1000000;
 
 void calculate_mean_time_and_compression(vector<float> timestamps,vector<float> taxCompressions,vector<float> decompressionTime,vector<int> decompressionError,int type){
@@ -148,7 +148,8 @@ void run_test(char* txt, int txtlen, char cmd[], char fileName[], char gzipFileN
 	uint8_t* encoded_text;
 	uint8_t* encoded_text78;
 	char* decoded_text = (char*)malloc((txtlen+1)*sizeof(char));
-	char* decoded_text78 = (char*)malloc((txtlen+1)*sizeof(char));
+	//char* decoded_text = (char*)malloc(txtlen+1);
+	//char* decoded_text78 = (char*)malloc((txtlen+1)*sizeof(char));
 
 	float duration = 0;
 	float seconds = 0;
@@ -169,7 +170,7 @@ void run_test(char* txt, int txtlen, char cmd[], char fileName[], char gzipFileN
 		taxCompressions.push_back(c);
 
 		//################################## CALL lz78 ##########################################
-		t1 = high_resolution_clock::now();
+		/*t1 = high_resolution_clock::now();
 		encoded_text78 = lz78_encode (txt, txtlen, &codelen2);
 	    t2 = high_resolution_clock::now();
 
@@ -178,7 +179,7 @@ void run_test(char* txt, int txtlen, char cmd[], char fileName[], char gzipFileN
 		c = (float)codelen2/(float)txtlen;
 		
 		timestamps78.push_back(seconds);
-		taxCompressions78.push_back(c);
+		taxCompressions78.push_back(c);*/
 
 		// ################################## CALL GZIP ##########################################
 		t1 = high_resolution_clock::now();
@@ -206,7 +207,7 @@ void run_test(char* txt, int txtlen, char cmd[], char fileName[], char gzipFileN
 
 	    //################################## CALL lz78 ##########################################
 	    
-	    t1 = high_resolution_clock::now();
+	    /*t1 = high_resolution_clock::now();
 		decoded_text78 = lz78_decode (encoded_text78, codelen2, txtlen);	
 	    t2 = high_resolution_clock::now();
 
@@ -214,7 +215,7 @@ void run_test(char* txt, int txtlen, char cmd[], char fileName[], char gzipFileN
 		seconds = duration/MICROSECONDS;
 
 		decompressionTime78.push_back(seconds);
-	    decompressionError78.push_back(strcmp(txt,decoded_text78));
+	    decompressionError78.push_back(strcmp(txt,decoded_text78));*/
 		
 	    // ################################## CALL GZIP ##########################################
 	    char* cmd2 = build_decompress_cmd(gzipFileName,fileName,i);
@@ -229,8 +230,11 @@ void run_test(char* txt, int txtlen, char cmd[], char fileName[], char gzipFileN
 	}
 
 	calculate_mean_time_and_compression(timestamps,taxCompressions,decompressionTime,decompressionError,0);
-	calculate_mean_time_and_compression(timestamps78,taxCompressions78,decompressionTime78,decompressionError78,1);
+	//calculate_mean_time_and_compression(timestamps78,taxCompressions78,decompressionTime78,decompressionError78,1);
 	calculate_mean_time_and_compression(timestampsGZIP,taxCompressionsGZIP,decompressionTimeGZIP,decompressionErrorGZIP,2);
+
+	free(decoded_text);
+	//free(decoded_text78);
 }
 
 void run_suite(vector<char*> files){
@@ -252,7 +256,7 @@ void run_suite(vector<char*> files){
 		int txtlen = (int)ftell(fp);
 
 		fseek(fp, 0, SEEK_SET);
-		char* txt = (char*)malloc(txtlen+1);
+		char* txt;// = (char*)malloc(txtlen+1);
 
 		fread(txt, 1, txtlen, fp);
 		txt[txtlen] = 0;
@@ -267,7 +271,8 @@ void run_suite(vector<char*> files){
 
 		char* cmd = build_compress_cmd(files.at(i),gzipFileName);
 		
-		run_test(txt, txtlen, cmd, files.at(i), gzipFileName);
+		//run_test(txt, txtlen, cmd, files.at(i), gzipFileName);
+		free(txt);
 	}
 }
 
@@ -281,5 +286,7 @@ int main() {
 	//files.push_back("../data/english.50MB");
 	//files.push_back("../data/english.100MB");
 	//files.push_back("../data/english.200MB");
+	//files.push_back("../data/english.500MB");
+	//files.push_back("../data/english.1024MB");
 	run_suite(files);
 }
