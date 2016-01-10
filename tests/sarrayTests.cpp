@@ -34,7 +34,7 @@ using namespace std::chrono;
 const int EXECUTIONS = 1;
 const int MICROSECONDS = 1000000;
 
-void calculateMeanTimeAndCompression(vector<float> timestamps, bool type){
+void calculate_mean_time_execution(vector<float> timestamps, bool type){
 	float meanTime = 0;
 	char executions[100];strcpy (executions, "");
 	char timeValues[100];strcpy (timeValues, "");
@@ -63,7 +63,7 @@ void calculateMeanTimeAndCompression(vector<float> timestamps, bool type){
 	printf("Média do tempo de indexação: %f.\n\n", (meanTime)/EXECUTIONS);
 }
 
-void runTest(char* txt, size_t txtlen){
+void run_test(char* txt, int txtlen){
 	size_t* sarray;
 	size_t* Llcp;
 	size_t* Rlcp;
@@ -90,15 +90,15 @@ void runTest(char* txt, size_t txtlen){
 		free(Rlcp);
 	}
 
-	calculateMeanTimeAndCompression(timestamps,true);
+	calculate_mean_time_execution(timestamps,true);
 }
 
-void runSuite(vector<char*> files){
+void run_suite(vector<char*> files){
 	printf("\n######################################################");
 	printf("\n################# BATERIA DE TESTES ##################");
 	printf("\n##################### INDICE #########################\n");
 	printf("\nLegenda:\nLinha 1: ID da Execução");
-	printf("\nLinha 2: Tempo de Compressão (segundos)\n");
+	printf("\nLinha 2: Tempo de indexação (segundos)\n");
 
 	size_t size;
 	char *text;
@@ -119,7 +119,7 @@ void runSuite(vector<char*> files){
 			printf("\n######################################################\n");
 			printf("Inicializando os testes para o arquivo: %s.\nArquivo de tamanho: %lu\n", files.at(i),size);
 
-			runTest(text, size);
+			run_test(text, size);
 			free(text);
 		} else {
 			printf("Arquivo %s fornecido não foi encontrado.\n",files.at(i));
@@ -158,5 +158,10 @@ int main() {
 	//files.push_back("../data/meComprima_menor.txt");
 	//files.push_back("../data/bible.txt");
 	//files.push_back("../data/arquivo.txt");
+<<<<<<< HEAD
 	runSuite(files);
 }
+=======
+	run_suite(files);
+}
+>>>>>>> peaonunes/master
