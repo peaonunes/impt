@@ -26,6 +26,6 @@ void print_help_text();
 void read_pattern_file(program_args &args);
 void search_index_file(program_args &args);
 int is_regular_file(const char *path);
-void create_index_file(char* source_file);
+void create_index_file(program_args &args);
 
 #endif
