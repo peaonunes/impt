@@ -322,38 +322,38 @@ void find_occurrences(int* matches_start, int* matches_end, char* text, int txtl
 
 // A ser usado para a compressão
 char* get_bytes_from_array(int* array, uint32_t arraylen) {
-    uint32_t result_size = arraylen * sizeof(int);
+    uint32_t result_size = arraylen << 2;
     char *result = (char*)malloc(result_size + 1);
     uint32_t result_index = 0;
     uint32_t array_index = 0;
- 
+
     while(array_index < arraylen) {
         result[result_index++] = (array[array_index] & 0xff000000) >> 24;
         result[result_index++] = (array[array_index] & 0x00ff0000) >> 16;
         result[result_index++] = (array[array_index] & 0x0000ff00) >> 8;
         result[result_index++] = array[array_index] & 0x000000ff;
- 
+
         ++array_index;
     }
- 
+
     result[result_index] = 0;
- 
+
     return result;
 }
 
 int* get_int_array_from_bytes(char* byte_array, uint32_t arraylen) {
-	uint32_t result_size = arraylen * sizeof(int);
+	uint32_t result_size = arraylen << 2;
 	int* result = (int*)malloc(result_size);
 	int aux;
 
 	uint32_t result_index = 0;
 	uint32_t bytearray_index = 0;
 
-	while (result_index < result_size) {
-		aux = 0 | byte_array[bytearray_index] << 24
-			| byte_array[bytearray_index + 1] << 16
-			| byte_array[bytearray_index + 2] << 8
-			| byte_array[bytearray_index + 3];
+	while (bytearray_index < result_size) {
+		aux = 0 | (byte_array[bytearray_index] & 0xff) << 24
+			| (byte_array[bytearray_index + 1] & 0xff) << 16
+			| (byte_array[bytearray_index + 2] & 0xff) << 8
+			| (byte_array[bytearray_index + 3] & 0xff);
 
 		result[result_index++] = aux;
 		bytearray_index += 4;

@@ -11,35 +11,28 @@ int main (int argc, char **argv) {
 
 	if (args.help_flag) {
 		print_help_text();
-
-	} else if (args.mode_flag==Index) {
+	} else if (args.mode_flag==INDEX_MODE) {
 		if (args.text_file) {
 			create_index_file(args);
-
 		} else {
 			cerr << "Nenhum arquivo de texto foi fornecido." << endl;
 			exit(1);
-
 		}
-	} else if (args.mode_flag==Search) {
+	} else if (args.mode_flag==SEARCH_MODE) {
 		if (args.pattern_file) {
 			read_pattern_file(args);
-
 		} else {
 			if (args.patterns.empty()) {
 				cerr << "Nenhum padrão ou arquivo de padrões foi fornecido." << endl;
 				exit(1);
-
 			}
 		}
 
 		if (args.index_file) {
 			search_index_file(args);
-
 		} else {
 			cerr << "Nenhum arquivo de índices foi fornecido." << endl;
 			exit(1);
-
 		}
 	} else {
 		cerr << "Modo inválido. Tente 'search' ou 'index'. Use -h ou --help para mais informações." << endl;
