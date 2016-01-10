@@ -1,23 +1,27 @@
 #ifndef UTILS_H
 #define UTILS_H
 
+#include <cstdint>
 #include <vector>
 
-enum Mode { Index, Search };
-enum Compression { LZ77, LZ78 };
+unsigned char const INDEX_MODE = 0;
+unsigned char const SEARCH_MODE = 1;
+unsigned char const LZ77 = 0;
+unsigned char const LZ78 = 1;
 
 struct program_args {
   program_args();
   ~program_args();
 
-  Mode mode_flag;
-  Compression compression_flag;
+  unsigned char mode_flag;
+  unsigned char compression_flag;
   char* pattern_file;
   std::vector<std::string> patterns;
   bool help_flag;
   bool count_flag;
   char* index_file;
   char* text_file;
+  uint32_t largest_pattern_length;
 };
 
 program_args get_program_parameters(int argc, char** argv);
