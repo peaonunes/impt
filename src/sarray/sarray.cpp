@@ -63,7 +63,7 @@ sarray_temp* sort_letter_occurrences(sarray_temp* stemp, size_t len) {
 }
 
 // Construindo o sarray
-size_t* build_sarray(char* text, size_t text_length, uint32_t explimit) {
+size_t* build_sarray(char* text, size_t text_length, uint32_t explimit, size_t *sarray_inverse) {
 	size_t array_size = text_length * sizeof(size_t);
 	long aux = 0;
 	size_t group_size = 1;
@@ -117,6 +117,7 @@ size_t* build_sarray(char* text, size_t text_length, uint32_t explimit) {
 
 	for (int i = 0; i < text_length; ++i) {
 		final_sarray[i] = stemp[i].start_index;
+		sarray_inverse[stemp[i].start_index] = i;
 	}
 
 	free(stemp);
@@ -136,18 +137,55 @@ size_t lcp(char* text1, char* text2) {
 	return lcp;
 }
 
-void build_LRlcp(size_t* Llcp, size_t* Rlcp, size_t* sarray, char* text, size_t left, size_t right) {
+size_t build_LRlcp(size_t* Llcp, size_t* Rlcp, size_t* lcp_array, size_t left, size_t right) {
 	size_t middle;
+	size_t lcpleft;
+	size_t lcpright;
 
 	if (right - left > 1) {
 		middle = (left + right) / 2;
 
-		Llcp[middle] = lcp(&text[sarray[left]], &text[sarray[middle]]);
-		Rlcp[middle] = lcp(&text[sarray[middle]], &text[sarray[right]]);
+		lcpleft = build_LRlcp(Llcp, Rlcp, lcp_array, left, middle);
+		lcpright = build_LRlcp(Llcp, Rlcp, lcp_array, middle, right);
 
-		build_LRlcp(Llcp, Rlcp, sarray, text, left, middle);
-		build_LRlcp(Llcp, Rlcp, sarray, text, middle, right);
+		Llcp[middle] = lcpleft;
+		Rlcp[middle] = lcpright;
+
+		if (lcpleft < lcpright) {
+			return lcpleft;
+		} else {
+			return lcpright;
+		}
+	} else {
+		return lcp_array[right];
 	}
+}
+
+size_t *build_lcp_array(char *text, size_t *sarray, size_t *sarray_inverse, size_t size) {
+	size_t *result = (size_t*)calloc(size, sizeof(size_t));
+	size_t last_lcp = 0;
+	size_t k, j;
+
+	for (size_t i = 0; i < size; i++) {
+		k = sarray_inverse[i];
+
+		if (k) {
+			j = sarray[k - 1];
+
+			while (text[i + last_lcp] && text[j + last_lcp]
+					&& text[i + last_lcp] == text[j + last_lcp]) {
+				++last_lcp;
+			}
+
+			result[k] = last_lcp;
+		}
+
+		if (last_lcp > 0) {
+			--last_lcp;
+		}
+	}
+
+	return result;
 }
 
 // Os parâmetros sarray, Llcp e Rlcp devem ser passados por referência, devendo
@@ -155,23 +193,22 @@ void build_LRlcp(size_t* Llcp, size_t* Rlcp, size_t* sarray, char* text, size_t 
 void build_sarray_LRlcp(char* text, size_t text_length, size_t** sarray, size_t** Llcp, size_t** Rlcp) {
 	uint32_t explimit = ceil(log2(text_length));
 	size_t array_size = text_length * sizeof(size_t);
+	size_t *sarray_inverse = (size_t*)calloc(text_length, sizeof(size_t));
+
+	(*sarray) = build_sarray(text, text_length, explimit, sarray_inverse);
+
+	size_t *lcp_array = build_lcp_array(text, *sarray, sarray_inverse, text_length);
+
+	free(sarray_inverse);
 
 	(*Llcp) = (size_t*)malloc(array_size);
 	memset(*Llcp, -1, array_size);
 	(*Rlcp) = (size_t*)malloc(array_size);
 	memset(*Rlcp, -1, array_size);
 
-	(*sarray) = build_sarray(text, text_length, explimit);
+	build_LRlcp(*Llcp, *Rlcp, lcp_array, 0, text_length - 1);
 
-	// printf("\n---\n");
-	// for (int i = 0; i < text_length; ++i)
-	// {
-	// 	if ((*sarray)[i] < 0 || (*sarray)[i] >= text_length)
-	// 		printf("Anomalia encontrada no indice %d: %d\n", i, (*sarray)[i]);
-	// }
-	// printf("\n---\n");
-
-	build_LRlcp(*Llcp, *Rlcp, *sarray, text, 0, text_length - 1);
+	free(lcp_array);
 }
 
 size_t predecessor(char* text, size_t txtlen, char* pattern, size_t patlen, size_t* sarray, size_t* Llcp, size_t* Rlcp) {
