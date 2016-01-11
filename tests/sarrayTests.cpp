@@ -63,7 +63,7 @@ void calculate_mean_time_execution(vector<float> timestamps, bool type){
 	printf("Média do tempo de indexação: %f.\n\n", (meanTime)/EXECUTIONS);
 }
 
-void run_test(char* txt, int txtlen){
+void run_test(char* txt, size_t txtlen){
 	size_t* sarray;
 	size_t* Llcp;
 	size_t* Rlcp;
@@ -102,6 +102,7 @@ void run_suite(vector<char*> files){
 	size_t size;
 	char *text;
 	for (int i = 0; i < files.size(); i++){
+
 		FILE *fp = fopen(files.at(i), "r");
 
 		if(fp){
@@ -130,22 +131,11 @@ int main() {
 	vector<char*> files;
 	printf("sizeof: %lu", sizeof(size_t));
 
-	// //CanterburyCorpus
-	// files.push_back("../data/cantrbry/alice29.txt");
-	// files.push_back("../data/cantrbry/asyoulik.txt");
-	// files.push_back("../data/cantrbry/fields.c");
-	// files.push_back("../data/cantrbry/grammar.lsp");
-	// files.push_back("../data/cantrbry/lcet10.txt");
-	// files.push_back("../data/cantrbry/plrabn12.txt");
-	// files.push_back("../data/cantrbry/xargs.1");
-
-	// files.push_back("../data/arquivo.txt");
-	// files.push_back("../data/proteins.10MB");
-
-	// files.push_back("../data/proteins.10MB");
-	// files.push_back("../data/proteins.50MB.txt");
-	// files.push_back("../data/proteins.100MB");
-	files.push_back("../data/proteins.200MB");
+	files.push_back("../data/proteins.1MB");
+	files.push_back("../data/arquivo.txt");
+	files.push_back("../data/bible.txt");
+	files.push_back("../data/proteins.50MB");
+	files.push_back("../data/proteins.100MB");
 
 	//CanterburyCorpus
 	/*files.push_back("../data/cantrbry/alice29.txt");
@@ -158,12 +148,6 @@ int main() {
 
 	//files.push_back("../data/proteins.1MB");
 	//files.push_back("../data/proteins.10MB");
-	//files.push_back("../data/proteins.50MB");
-	//files.push_back("../data/proteins.100MB");
 	//files.push_back("../data/proteins.200MB");
-
-	//files.push_back("../data/meComprima_menor.txt");
-	//files.push_back("../data/bible.txt");
-	//files.push_back("../data/arquivo.txt");
 	run_suite(files);
 }
